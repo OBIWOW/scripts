@@ -134,25 +134,245 @@ END:VCALENDAR"
     
     return ics_header
     
+def read_schedule(schedule_file):
+    """
+    Read schedule tsv and creates dicts
+    NOTE workshops should have a unique number in the 'Number' column
+    with a trailing 0 ('01', '02', ..., '10', '11', ...)
+    """
+    dict_id_name = {}
+    dict_schedule_final = {}
+    dict_id_timeslot = {}
+
+    with open(schedule_file, newline='') as csvfile:
+        data = csv.DictReader(csvfile, delimiter = '\t')
+        for row in data:
+            
+            if row[schedule_id_column] not in dict_id_name:
+                dict_id_name[row[schedule_title_column]] = row[schedule_id_column]
+            
+            
+            date = row[schedule_date_column]
+            
+            dict_id_timeslot[row[schedule_id_column]] = {}
+            dict_id_timeslot[row[schedule_id_column]]['date'] = date
+            dict_id_timeslot[row[schedule_id_column]]['room'] = row[schedule_room_column]
+            dict_id_timeslot[row[schedule_id_column]]['main_instructor'] = row[schedule_main_instructor_column]
+            dict_id_timeslot[row[schedule_id_column]]['helper'] = row[schedule_helper_instructor_column]
+            dict_id_timeslot[row[schedule_id_column]]['title'] = row[schedule_title_column]
+            
+            if date not in dict_schedule_final:
+                dict_schedule_final[date] = {}
+                dict_schedule_final[date]['morning'] = []
+                dict_schedule_final[date]['afternoon'] = []
+                dict_schedule_final[date]['whole_day'] = []
+            
+        
+
+            time = row[schedule_time_column]
+                
+            if time == 'full day':
+                dict_schedule_final[date]['whole_day'].append(
+                                                            {'id': row[schedule_id_column],
+                                                            'title': row[schedule_title_column]
+                                                            }
+                                                            )
+                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00 13:00-16:00'
+                            
+            elif time == 'morning':
+                dict_schedule_final[date]['morning'].append(
+                                                            {'id': row[schedule_id_column],
+                                                            'title': row[schedule_title_column]
+                                                            }
+                                                        )
+                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00'
+
+                    
+            elif time == 'afternoon':
+                dict_schedule_final[date]['afternoon'].append(
+                                        {'id': row[schedule_id_column],
+                                        'title': row[schedule_title_column]
+                                        }
+                                    )
+                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '13:00-16:00'
+
+  
+    dict_schedule_final = OrderedDict(sorted(dict_schedule_final.items()))
+    return dict_schedule_final, dict_id_timeslot
     
+def create_schedule_table(dict_schedule_final):
+    """
+    Create html table from schedule dict
+    """
+    table_schedule_style = 'border:2px solid black;border-collapse:collapse;'
+    table_schedule_header_style = 'border:2px solid black;'
     
+    table_schedule_line_style = 'border-top: 2px solid black;'
+    table_schedule_rowname_style = 'border:2px solid black;vertical-align: middle;'
+    table_schedule_row_style = 'margin-left:10px;'
+
+    table_header_schedule = '<br><table border="1" style="' + table_schedule_style + '" id="table_sched"><thead><tr style="' + table_schedule_header_style + '"><td><strong>Day</strong></td><td><strong>Morning 9:00-12:00</strong></td><td><strong>Afternoon 13:00-16:00</strong></td></tr></thead>'
+    
+    list_line_schedule = []
+    for date in dict_schedule_final:
+        # catch empty entries
+        if not date:
+            continue
+        
+        nb_conc_workshop = nb_concurrent_workshop(dict_schedule_final[date])
+        
+        
+        line_table_schedule = ''
+        line_table_schedule += '<tr style="'
+        line_table_schedule += table_schedule_line_style
+        line_table_schedule += '"><td rowspan="'
+        line_table_schedule += str(nb_conc_workshop)
+        line_table_schedule += '" style="'
+        line_table_schedule += table_schedule_rowname_style
+        line_table_schedule += '"><strong>'
+        line_table_schedule += datetime.strptime(date, '%d.%m.%y').strftime("%a %d.%m.%y")
+        line_table_schedule += '</strong></td>'
+        
+        if dict_schedule_final[date]['whole_day']:
+            for whole_day in dict_schedule_final[date]['whole_day']:
+                line_table_schedule += '<td colspan="2"><p style="'
+                line_table_schedule += table_schedule_row_style
+                line_table_schedule += '"><a href="#'
+                line_table_schedule += whole_day['id']
+                line_table_schedule += '">'
+                line_table_schedule += whole_day['title']
+                line_table_schedule += '</a></p></td></tr><tr>'
+        
+        for i in range(nb_conc_workshop - len(dict_schedule_final[date]['whole_day'])):
+            line_table_schedule += '<td><p style="'
+            line_table_schedule += table_schedule_row_style
+            line_table_schedule += '">'
+            try:
+                morning_dict = dict_schedule_final[date]['morning'][i]
+                line_table_schedule += '<a href="#'
+                line_table_schedule += morning_dict['id']
+                line_table_schedule += '">'
+                line_table_schedule += morning_dict['title']
+                line_table_schedule += '</a>'    
+            except IndexError:
+                pass
+            line_table_schedule += '</p></td><td>'
+            
+            try:
+                afternoon_dict = dict_schedule_final[date]['afternoon'][i]
+                line_table_schedule += '<a href="#'
+                line_table_schedule += afternoon_dict['id']
+                line_table_schedule += '">'
+                line_table_schedule += afternoon_dict['title']
+                line_table_schedule += '</a>' 
+            except IndexError:
+                pass
+            line_table_schedule += '</p></td></tr><tr>'
+                
+        # line_table_schedule += '</table>'
+        list_line_schedule.append(line_table_schedule.rsplit('<tr>',1)[0])
+    return table_header_schedule, list_line_schedule
+    
+
+def read_workshops(workshop_description_tsv):
+    """
+    Parse workshop description nettkjema tsv dump
+    into a list of html-formatted sections
+    """
+    with open(workshop_description_tsv, newline='') as csvfile:
+        data = csv.DictReader(csvfile, delimiter = '\t')
+        list_html_section = []
+        list_table = []
+        
+        for row in data:
+            
+            workshop_id = dict_id[row[id_column].strip()]
+            
+            html_section = '<hr class="double"><div id="'
+            html_section += workshop_id
+            html_section += '"><h2>'
+            html_section += row[title_column].strip()
+            html_section += '</h2><p><strong><u>Date</u>: '
+            html_section += datetime.strptime(dict_id_timeslot[workshop_id]['date'], '%d.%m.%y').strftime("%A %d %B %Y") + ' ' + dict_id_timeslot[workshop_id]['timeslot']
+            html_section += '</strong> '
+            html_section += '<a rel="noreferrer noopener" target="_blank" href="' + ics_folder + workshop_id + '.ics">Add to calendar</a>'
+            html_section += '</p><strong><u>Room</u>:</strong> '
+            html_section += make_room_url(dict_id_timeslot[workshop_id]['room'], dict_room)
+            html_section += '<p><a rel="noreferrer noopener" target="_blank" href="'
+            html_section += pre_register_link + row[title_column].strip().replace(" ", "_") + post_register_link
+            html_section += '">Register here</a></p><p></p><h3>Description</h3><p align="justify">'
+            html_section += row[description_column]
+            html_section += '</p><div style="background-color:#b6efed;width:90%;border-radius: 15px;padding: 10px;margin-left: auto;margin-right: auto;"><p><h4>Learning outcomes</h4>'
+            html_section += html_list_outcome(row[outcome_column])
+            html_section += '</p><br></div><h3>Target audience</h3><p>'
+            html_section += row[target_column]
+            html_section += '</p></div><h3>Pre-requisites</h3><p>'
+            html_section += html_list(row[pre_requisit])
+            html_section += '</p><h3>Equipment to bring</h3><p>'
+            html_section += row[material_column]
+            html_section += '</p><p><strong>Instructor(s):<br></strong>'
+            html_section += dict_id_timeslot[workshop_id]['main_instructor'] + ' (main)<br>'
+            html_section += dict_id_timeslot[workshop_id]['helper']
+            
+            html_section += '</p><a href="#table_sched">Go back</a></div>'
+            
+            list_html_section.append(html_section)
+    return list_html_section
+
+def write_html(table_header_schedule, list_line_schedule, list_html_section):
+    """
+    Collect all html information and write to file
+    """
+    html_all = '<h2>Agenda</h2>'
+
+    html_all += table_header_schedule
+    
+    for line in list_line_schedule:
+        html_all += line + "\n"
+
+    html_all += '</table><br>'         
+
+    for section in list_html_section:
+        html_all += section + "\n" 
+
+    # write the final html
+    file=open(outfile,'w')
+    file.write(html_all)
+    file.close()
+
+def write_ical(outdir_ics, dict_id_timeslot):
+    """
+    Write individual ics files for each workshop
+    """
+    # Create ical folder if necessary
+    Path(outdir_ics).mkdir(parents=True, exist_ok=True)
+
+    for id in dict_id_timeslot:
+        # catch empty entries
+        if not id:
+            continue
+        ics_text = make_ics(dict_id_timeslot[id]['date'],
+                            dict_id_timeslot[id]['timeslot'],
+                            dict_id_timeslot[id]['room'],
+                            dict_room[dict_id_timeslot[id]['room']]['url'],
+                            dict_id_timeslot[id]['title'],
+                            )
+        outpath_ics = os.path.join(outdir_ics, id + ".ics")
+        with open(outpath_ics, 'w') as file:
+            file.write(ics_text)
+
 
 if  __name__ == '__main__':
     
-
-    path_tsv = "survey_results.tsv"
-    path_schedule = "schedule.tsv"
+    path_tsv = "survey_results.tsv" # tsv dump of nettskjema with proposals
+    path_schedule = "schedule.tsv" # tsv dump of Google sheet with schedule
     outfile = "workshop_content.html"
     outdir_ics = "ical"
     
-    
-
-#    register_link = "https://docs.google.com/forms/d/1YHSKXCrdYu73Xby1LnKMT2En3DInX3qmLrylwZKronc/prefill"
     pre_register_link = "https://nettskjema.no/a/296327?CBworkshop="
     post_register_link = "&LCKworkshop=true"
     
     ics_folder = "https://www.mn.uio.no/sbi/english/events/oslo-bioinformatics-week-2022/ics_files/"
-
 
     id_column = 'NR'
     title_column = 'Title of the workshop'
@@ -230,220 +450,20 @@ if  __name__ == '__main__':
             }
     }
 
+    # parse schedule into dicts
+    dict_schedule_final, dict_id_timeslot = read_schedule(path_schedule)
 
-    dict_schedule_final = {}
-    dict_id_name = {}
-    
-    dict_id_timeslot = {}
+    # create schedule table html
+    table_header_schedule, list_line_schedule = create_schedule_table(dict_schedule_final)
 
+    # The following line seems obsolete
+    # table_header = '<table border="1" id="table"><thead><tr><td><strong>Title of the workshop</strong></td><td><strong>Length of the workshop</strong></td><td><strong>Target audiences</strong></td></tr></thead>'
 
-    with open(path_schedule, newline='') as csvfile:
-        data = csv.DictReader(csvfile, delimiter = '\t')
-        for row in data:
-            
-            if row[schedule_id_column] not in dict_id_name:
-                dict_id_name[row[schedule_title_column]] = row[schedule_id_column]
-            
-            
-            date = row[schedule_date_column]
-            
-            dict_id_timeslot[row[schedule_id_column]] = {}
-            dict_id_timeslot[row[schedule_id_column]]['date'] = date
-            dict_id_timeslot[row[schedule_id_column]]['room'] = row[schedule_room_column]
-            dict_id_timeslot[row[schedule_id_column]]['main_instructor'] = row[schedule_main_instructor_column]
-            dict_id_timeslot[row[schedule_id_column]]['helper'] = row[schedule_helper_instructor_column]
-            dict_id_timeslot[row[schedule_id_column]]['title'] = row[schedule_title_column]
-            
-            if date not in dict_schedule_final:
-                dict_schedule_final[date] = {}
-                dict_schedule_final[date]['morning'] = []
-                dict_schedule_final[date]['afternoon'] = []
-                dict_schedule_final[date]['whole_day'] = []
-            
-        
-
-            time = row[schedule_time_column]
-                
-            if time == 'full day':
-                dict_schedule_final[date]['whole_day'].append(
-                                                            {'id': row[schedule_id_column],
-                                                            'title': row[schedule_title_column]
-                                                            }
-                                                            )
-                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00 13:00-16:00'
-                            
-            elif time == 'morning':
-                dict_schedule_final[date]['morning'].append(
-                                                            {'id': row[schedule_id_column],
-                                                            'title': row[schedule_title_column]
-                                                            }
-                                                        )
-                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00'
-
-                    
-            elif time == 'afternoon':
-                dict_schedule_final[date]['afternoon'].append(
-                                        {'id': row[schedule_id_column],
-                                        'title': row[schedule_title_column]
-                                        }
-                                    )
-                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '13:00-16:00'
-
-  
-    
-    
-
-    
-    dict_schedule_final = OrderedDict(sorted(dict_schedule_final.items()))
-    
-    table_schedule_style = 'border:2px solid black;border-collapse:collapse;'
-    table_schedule_header_style = 'border:2px solid black;'
-    
-    table_schedule_line_style = 'border-top: 2px solid black;'
-    table_schedule_rowname_style = 'border:2px solid black;vertical-align: middle;'
-    table_schedule_row_style = 'margin-left:10px;'
-
-    table_header_schedule = '<br><table border="1" style="' + table_schedule_style + '" id="table_sched"><thead><tr style="' + table_schedule_header_style + '"><td><strong>Day</strong></td><td><strong>Morning 9:00-12:00</strong></td><td><strong>Afternoon 13:00-16:00</strong></td></tr></thead>'
-    
-    list_line_schedule = []
-    for date in dict_schedule_final:
-        # catch empty entries
-        if not date:
-            continue
-        
-        nb_conc_workshop = nb_concurrent_workshop(dict_schedule_final[date])
-        
-        
-        line_table_schedule = ''
-        line_table_schedule += '<tr style="'
-        line_table_schedule += table_schedule_line_style
-        line_table_schedule += '"><td rowspan="'
-        line_table_schedule += str(nb_conc_workshop)
-        line_table_schedule += '" style="'
-        line_table_schedule += table_schedule_rowname_style
-        line_table_schedule += '"><strong>'
-        line_table_schedule += datetime.strptime(date, '%d.%m.%y').strftime("%a %d.%m.%y")
-        line_table_schedule += '</strong></td>'
-        
-        if dict_schedule_final[date]['whole_day']:
-            for whole_day in dict_schedule_final[date]['whole_day']:
-                line_table_schedule += '<td colspan="2"><p style="'
-                line_table_schedule += table_schedule_row_style
-                line_table_schedule += '"><a href="#'
-                line_table_schedule += whole_day['id']
-                line_table_schedule += '">'
-                line_table_schedule += whole_day['title']
-                line_table_schedule += '</a></p></td></tr><tr>'
-        
-        for i in range(nb_conc_workshop - len(dict_schedule_final[date]['whole_day'])):
-            line_table_schedule += '<td><p style="'
-            line_table_schedule += table_schedule_row_style
-            line_table_schedule += '">'
-            try:
-                morning_dict = dict_schedule_final[date]['morning'][i]
-                line_table_schedule += '<a href="#'
-                line_table_schedule += morning_dict['id']
-                line_table_schedule += '">'
-                line_table_schedule += morning_dict['title']
-                line_table_schedule += '</a>'    
-            except IndexError:
-                pass
-            line_table_schedule += '</p></td><td>'
-            
-            try:
-                afternoon_dict = dict_schedule_final[date]['afternoon'][i]
-                line_table_schedule += '<a href="#'
-                line_table_schedule += afternoon_dict['id']
-                line_table_schedule += '">'
-                line_table_schedule += afternoon_dict['title']
-                line_table_schedule += '</a>' 
-            except IndexError:
-                pass
-            line_table_schedule += '</p></td></tr><tr>'
-            
-        
-                    
-                
-        # line_table_schedule += '</table>'
-        list_line_schedule.append(line_table_schedule.rsplit('<tr>',1)[0])
-                
-        
-                
-
-    table_header = '<table border="1" id="table"><thead><tr><td><strong>Title of the workshop</strong></td><td><strong>Length of the workshop</strong></td><td><strong>Target audiences</strong></td></tr></thead>'
-
-    with open(path_tsv, newline='') as csvfile:
-        data = csv.DictReader(csvfile, delimiter = '\t')
-        list_html_section = []
-        list_table = []
-        
-        for row in data:
-            
-            workshop_id = dict_id[row[id_column].strip()]
-            
-            html_section = '<hr class="double"><div id="'
-            html_section += workshop_id
-            html_section += '"><h2>'
-            html_section += row[title_column].strip()
-            html_section += '</h2><p><strong><u>Date</u>: '
-            html_section += datetime.strptime(dict_id_timeslot[workshop_id]['date'], '%d.%m.%y').strftime("%A %d %B %Y") + ' ' + dict_id_timeslot[workshop_id]['timeslot']
-            html_section += '</strong> '
-            html_section += '<a rel="noreferrer noopener" target="_blank" href="' + ics_folder + workshop_id + '.ics">Add to calendar</a>'
-            html_section += '</p><strong><u>Room</u>:</strong> '
-            html_section += make_room_url(dict_id_timeslot[workshop_id]['room'], dict_room)
-            html_section += '<p><a rel="noreferrer noopener" target="_blank" href="'
-            html_section += pre_register_link + row[title_column].strip().replace(" ", "_") + post_register_link
-            html_section += '">Register here</a></p><p></p><h3>Description</h3><p align="justify">'
-            html_section += row[description_column]
-            html_section += '</p><div style="background-color:#b6efed;width:90%;border-radius: 15px;padding: 10px;margin-left: auto;margin-right: auto;"><p><h4>Learning outcomes</h4>'
-            html_section += html_list_outcome(row[outcome_column])
-            html_section += '</p><br></div><h3>Target audience</h3><p>'
-            html_section += row[target_column]
-            html_section += '</p></div><h3>Pre-requisites</h3><p>'
-            html_section += html_list(row[pre_requisit])
-            html_section += '</p><h3>Equipment to bring</h3><p>'
-            html_section += row[material_column]
-            html_section += '</p><p><strong>Instructor(s):<br></strong>'
-            html_section += dict_id_timeslot[workshop_id]['main_instructor'] + ' (main)<br>'
-            html_section += dict_id_timeslot[workshop_id]['helper']
-            
-            html_section += '</p><a href="#table_sched">Go back</a></div>'
-            # list_html_section.append(html_section)
-            list_html_section.append(html_section)
-
+    # read workshop descriptions
+    list_html_section = read_workshops(path_tsv)
 
     # collect all output in html format
-    html_all = '<h2>Agenda</h2>'
+    write_html(table_header_schedule, list_line_schedule, list_html_section)
 
-    html_all += table_header_schedule
-    
-    for line in list_line_schedule:
-        html_all += line + "\n"
-
-    html_all += '</table><br>'         
-
-    for section in list_html_section:
-        html_all += section + "\n" 
-
-    # write the final html
-    file=open(outfile,'w')
-    file.write(html_all)
-    file.close()
-    
-
-    # Create ical folder if necessary
-    Path(outdir_ics).mkdir(parents=True, exist_ok=True)
-
-    for id in dict_id_timeslot:
-        # catch empty entries
-        if not id:
-            continue
-        ics_text = make_ics(dict_id_timeslot[id]['date'],
-                            dict_id_timeslot[id]['timeslot'],
-                            dict_id_timeslot[id]['room'],
-                            dict_room[dict_id_timeslot[id]['room']]['url'],
-                            dict_id_timeslot[id]['title'],
-                            )
-        outpath_ics = os.path.join(outdir_ics, id + ".ics")
-        with open(outpath_ics, 'w') as file:
-            file.write(ics_text)
+    # write ical files
+    write_ical(outdir_ics, dict_id_timeslot)
