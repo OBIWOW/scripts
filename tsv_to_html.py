@@ -412,22 +412,25 @@ if  __name__ == '__main__':
             list_html_section.append(html_section)
 
 
+    # collect all output in html format
+    html_all = '<h2>Agenda</h2>'
 
-    file=open(outfile,'w')
-    file.write('<h2>Agenda</h2>')
-
-    file.write(table_header_schedule)
+    html_all += table_header_schedule
+    
     for line in list_line_schedule:
-        file.write(line + "\n")
-        
-    file.write('</table><br>')
+        html_all += line + "\n"
 
-
+    html_all += '</table><br>'         
 
     for section in list_html_section:
-        file.write(section + "\n")
+        html_all += section + "\n" 
+
+    # write the final html
+    file=open(outfile,'w')
+    file.write(html_all)
     file.close()
     
+
     # Create ical folder if necessary
     Path(outdir_ics).mkdir(parents=True, exist_ok=True)
 
