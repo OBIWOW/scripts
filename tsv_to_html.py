@@ -2,7 +2,8 @@ import csv
 from collections import OrderedDict
 from datetime import datetime
 from pprint import pprint
-import os
+from pathlib import Path
+import os, sys
 
 
 def html_list(raw_string):
@@ -139,14 +140,14 @@ END:VCALENDAR"
 if  __name__ == '__main__':
     
 
-    path_tsv = "/Users/jeannech/Documents/ObiWow/survey_results.tsv"
-    path_schedule = "/Users/jeannech/Documents/ObiWow/Schedules - Sheet1.tsv"
-    outfile = "/Users/jeannech/Documents/ObiWow/workshop_content.html"
-    outdir_ics = "/Users/jeannech/Documents/ObiWow/ical"
+    path_tsv = "survey_results.tsv"
+    path_schedule = "schedule.tsv"
+    outfile = "workshop_content.html"
+    outdir_ics = "ical"
     
     
 
-    register_link = "https://docs.google.com/forms/d/1YHSKXCrdYu73Xby1LnKMT2En3DInX3qmLrylwZKronc/prefill"
+#    register_link = "https://docs.google.com/forms/d/1YHSKXCrdYu73Xby1LnKMT2En3DInX3qmLrylwZKronc/prefill"
     pre_register_link = "https://nettskjema.no/a/296327?CBworkshop="
     post_register_link = "&LCKworkshop=true"
     
@@ -306,6 +307,9 @@ if  __name__ == '__main__':
     
     list_line_schedule = []
     for date in dict_schedule_final:
+        # catch empty entries
+        if not date:
+            continue
         
         nb_conc_workshop = nb_concurrent_workshop(dict_schedule_final[date])
         
@@ -424,9 +428,13 @@ if  __name__ == '__main__':
         file.write(section + "\n")
     file.close()
     
-    
+    # Create ical folder if necessary
+    Path(outdir_ics).mkdir(parents=True, exist_ok=True)
+
     for id in dict_id_timeslot:
-        
+        # catch empty entries
+        if not id:
+            continue
         ics_text = make_ics(dict_id_timeslot[id]['date'],
                             dict_id_timeslot[id]['timeslot'],
                             dict_id_timeslot[id]['room'],
