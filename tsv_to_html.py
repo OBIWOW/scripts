@@ -143,6 +143,7 @@ def read_schedule(schedule_file):
     dict_id_name = {}
     dict_schedule_final = {}
     dict_id_timeslot = {}
+    dict_title_wsids = {} # keys: workshop title; values: workshop internal ID
 
     with open(schedule_file, newline='') as csvfile:
         data = csv.DictReader(csvfile, delimiter = '\t')
@@ -152,22 +153,24 @@ def read_schedule(schedule_file):
                 dict_id_name[row[schedule_title_column]] = row[schedule_id_column]
             
             
-            date = row[schedule_date_column]
+            date = row[schedule_date_column].strip()
             
             dict_id_timeslot[row[schedule_id_column]] = {}
-            dict_id_timeslot[row[schedule_id_column]]['date'] = date
+            dict_id_timeslot[row[schedule_id_column]]['date'] = date.strip()
             dict_id_timeslot[row[schedule_id_column]]['room'] = row[schedule_room_column]
             dict_id_timeslot[row[schedule_id_column]]['main_instructor'] = row[schedule_main_instructor_column]
             dict_id_timeslot[row[schedule_id_column]]['helper'] = row[schedule_helper_instructor_column]
-            dict_id_timeslot[row[schedule_id_column]]['title'] = row[schedule_title_column]
+            dict_id_timeslot[row[schedule_id_column]]['title'] = row[schedule_title_column].strip()
+
+            ws_title = row[schedule_title_column].strip()
+            ws_internal_id = row[schedule_id_column]
+            dict_title_wsids[ws_title] = ws_internal_id
             
             if date not in dict_schedule_final:
                 dict_schedule_final[date] = {}
                 dict_schedule_final[date]['morning'] = []
                 dict_schedule_final[date]['afternoon'] = []
                 dict_schedule_final[date]['whole_day'] = []
-            
-        
 
             time = row[schedule_time_column]
                 
@@ -198,7 +201,19 @@ def read_schedule(schedule_file):
 
   
     dict_schedule_final = OrderedDict(sorted(dict_schedule_final.items()))
-    return dict_schedule_final, dict_id_timeslot
+    return dict_schedule_final, dict_id_timeslot, dict_title_wsids
+
+def get_submission_ID_dict(submission_title_file):
+    """
+    Read in file with nettskjema IDs and workshop titles.
+    Return dict with as keys: title, as values: nettskjema ID
+    """
+    submission_ID_dict = {}
+    with open(submission_title_file, newline='') as csvfile:
+        data = csv.DictReader(csvfile, delimiter = '\t')
+        for row in data:
+            submission_ID_dict[row[title_column]] = row[id_column]
+    return submission_ID_dict
     
 def create_schedule_table(dict_schedule_final):
     """
@@ -274,10 +289,11 @@ def create_schedule_table(dict_schedule_final):
     return table_header_schedule, list_line_schedule
     
 
-def read_workshops(workshop_description_tsv):
+def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
     """
     Parse workshop description nettkjema tsv dump
     into a list of html-formatted sections
+    Create dict of nettskjema ID and internal workshop ID
     """
     with open(workshop_description_tsv, newline='') as csvfile:
         data = csv.DictReader(csvfile, delimiter = '\t')
@@ -285,8 +301,22 @@ def read_workshops(workshop_description_tsv):
         list_table = []
         
         for row in data:
+
+            # match title, nettskjema ID and workshop ID
+
+            ws_title = row[title_column].strip()
+            # check whether workshop title is scheduled
+            if ws_title in dict_subm_title:
+                nettskjema_ID = dict_subm_title[ws_title]
+            else:
+                print(f"Submitted proposal '{ws_title}' is not in schedule, ignoring...\n")
+                continue
             
-            workshop_id = dict_id[row[id_column].strip()]
+            # check whether title is in dict with titles and internal workshop IDs
+            if ws_title in dict_ids:
+                workshop_id = dict_ids[ws_title]
+            else:
+                sys.exit(f"Fatal: found unknown workshop title, stemming from schedule.tsv file: '{ws_title}'")
             
             html_section = '<hr class="double"><div id="'
             html_section += workshop_id
@@ -317,6 +347,7 @@ def read_workshops(workshop_description_tsv):
             html_section += '</p><a href="#table_sched">Go back</a></div>'
             
             list_html_section.append(html_section)
+        
     return list_html_section
 
 def write_html(table_header_schedule, list_line_schedule, list_html_section):
@@ -365,6 +396,7 @@ def write_ical(outdir_ics, dict_id_timeslot):
 if  __name__ == '__main__':
     
     path_tsv = "survey_results.tsv" # tsv dump of nettskjema with proposals
+    path_subm_title = "submission_title.tsv" # extracted from survey_results.tsv,  with only nettskjema ID and title, edited
     path_schedule = "schedule.tsv" # tsv dump of Google sheet with schedule
     outfile = "workshop_content.html"
     outdir_ics = "ical"
@@ -378,7 +410,7 @@ if  __name__ == '__main__':
     title_column = 'Title of the workshop'
     form_column = 'form_link'
     description_column = 'A short description of your workshop (max 250 words)'
-    outcome_column = 'A brief statement on the learning outcomes from the workshop.'
+    outcome_column = 'A brief statement on the learning outcomes from the workshop, to be used on the website for the event.'
     pre_requisit = 'What are the prerequisites for attending the workshop?'
     instructor_column = 'Your name (first name and surname)?'
     email_column = 'What is your e-mail address?'
@@ -394,41 +426,18 @@ if  __name__ == '__main__':
     schedule_main_instructor_column = 'Instructor 1'
     schedule_helper_instructor_column = 'Instructor 2'
 
-    dict_id = {
-        '22800097': '01', # microRNA profiling and sequence analysis
-        '23341034': '02', # An introduction to Snakemake and Snakemake workflows
-        '23468309':'03',  # Genome assembly, curation and validation
-        '23484278':'04',  # High-performance computing in bioinformatics with Numpy/bioNumpy
-        '23493471':'05',  # Bioinformatics beginner's course - an introduction to whole genome sequencing
-        '23606111':'06',  # Responsible development in Machine learning
-        '23620579':'07',  # Create a data management plan with DSW
-        '23689924':'08',  # Workflows for multi-omic data for genome regulatory annotation
-        '23693745':'09',  # Multi-omics data integration analysis
-        '23721456':'10',  # Microscopy Image Processing with Image 
-        '23737630':'11',  # Species occurrence data publication to GBIF
-        '23748006':'12',  # Introduction to gene expression regulation by transcription factors and its computational analysis
-        '23769002':'13',  # Introgression detection
-        '23780725':'14',  # A hands-on introduction to NeLS and usegalaxy.no
-        '23798932':'15',  # Statistical principles in machine learning for small biomedical data
-        '23831337':'16',  # Container technologies and their use in GWAS analysis
-        '23840037':'17',  # Introduction to Git and Development Cycle
-        '23848937':'18',  # Clustering and plotting of single-cell expression data
-        '23850752':'19',  # Hands-on introduction to uniFAIR: a systematic and scalable approach to research data wrangling in Python
-        '23873515':'20',  # Metagenomes meta-analysis: bioinformatic ecosystem from idea to data
-    }
-    
     dict_room = {
-        'Sed (2465)': 
+        'Sed': 
             {
             'name': 'Sed (room 1454) in Ole-Johan Dahls hus (OJD)',
             'url': 'https://use.mazemap.com/#v=1&config=uio&center=10.718810,59.943890&zoom=18&sharepoitype=poi&sharepoi=1000987466&zlevel=1&campusid=799',
             },
-        'Perl (2453)': 
+        'Perl': 
             {
             'name': 'Perl (room 2453) in Ole-Johan Dahls hus (OJD)',
             'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.718834,59.943903&zoom=18&sharepoitype=poi&sharepoi=1000987629&campusid=801',
             },
-        'Python (2269)': 
+        'Python': 
             {
             'name': 'Python (room 2269) in Ole-Johan Dahls hus (OJD)',
             'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.719242,59.944188&zoom=18&sharepoitype=poi&sharepoi=1000987605&campusid=799',
@@ -438,29 +447,29 @@ if  __name__ == '__main__':
             'name': 'Hox (Computer lab, room 3205) Kristine Bonnevieshus',
             'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=3&center=10.723863,59.938264&zoom=18&sharepoitype=poi&sharepoi=1000974921&campusid=799',
             },
-        'Prolog (2465)':
+        'Prolog':
             {
                 'name': 'Prolog (room 2465) in Ole-Johan Dahls hus (OJD)',
                 'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.719105,59.944047&zoom=18&sharepoitype=poi&sharepoi=1000987623&campusid=799'
             },
-        'Postscript (2458)':
+        'Postscript':
             {
                 'name': 'Postscript (room 2458) in Ole-Johan Dahls hus (OJD)',
                 'url': 'https://use.mazemap.com/#v=1&config=uio&center=10.718931,59.943959&zoom=18&sharepoitype=poi&sharepoi=1000987608&zlevel=2&campusid=799'
             }
     }
 
+    # obtain nettskjema submission ID and title dict
+    dict_subm_title = get_submission_ID_dict(path_subm_title)
+
     # parse schedule into dicts
-    dict_schedule_final, dict_id_timeslot = read_schedule(path_schedule)
+    dict_schedule_final, dict_id_timeslot, dict_ids = read_schedule(path_schedule)
+    
+    # read and parse workshop descriptions
+    list_html_section = read_workshops(path_tsv, dict_subm_title, dict_ids)
 
     # create schedule table html
     table_header_schedule, list_line_schedule = create_schedule_table(dict_schedule_final)
-
-    # The following line seems obsolete
-    # table_header = '<table border="1" id="table"><thead><tr><td><strong>Title of the workshop</strong></td><td><strong>Length of the workshop</strong></td><td><strong>Target audiences</strong></td></tr></thead>'
-
-    # read workshop descriptions
-    list_html_section = read_workshops(path_tsv)
 
     # collect all output in html format
     write_html(table_header_schedule, list_line_schedule, list_html_section)
