@@ -5,6 +5,11 @@ from pprint import pprint
 from pathlib import Path
 import os, sys
 
+"""
+To do each year: update values for websites and nettskjema.
+See below just after 
+"""
+
 
 def html_list(raw_string):
     line = "<ul>"
@@ -78,9 +83,7 @@ def nb_concurrent_workshop(dict_date_schedule):
     
     return count_conc_work
 
-def make_ics(date, timeslot, location, location_link, title):
-    
-    event_name = 'Oslo Bioinformatics Workshop Week 2022'
+def make_ics(date, timeslot, location, location_link, event_name, title):
     
     whole_day = False
     split_timeslot = timeslot.split(" ")
@@ -165,6 +168,9 @@ def read_schedule(schedule_file):
             ws_title = row[schedule_title_column].strip()
             ws_internal_id = row[schedule_id_column]
             dict_title_wsids[ws_title] = ws_internal_id
+            # Obtain id of netwoking event
+            if ws_title.startswith("Networking event"):
+                networking_event_id = ws_internal_id
             
             if date not in dict_schedule_final:
                 dict_schedule_final[date] = {}
@@ -201,7 +207,7 @@ def read_schedule(schedule_file):
 
   
     dict_schedule_final = OrderedDict(sorted(dict_schedule_final.items()))
-    return dict_schedule_final, dict_id_timeslot, dict_title_wsids
+    return dict_schedule_final, dict_id_timeslot, dict_title_wsids, networking_event_id
 
 def get_submission_ID_dict(submission_title_file):
     """
@@ -283,11 +289,21 @@ def create_schedule_table(dict_schedule_final):
             except IndexError:
                 pass
             line_table_schedule += '</p></td></tr><tr>'
-                
-        # line_table_schedule += '</table>'
         list_line_schedule.append(line_table_schedule.rsplit('<tr>',1)[0])
     return table_header_schedule, list_line_schedule
     
+def adjust_event(list_line_schedule, event_id, event_url):
+    """
+    Some events have their own url instead of a desription on the webpage.
+    Replace the internal html tag with this url.
+    """
+    new_list_line_schedule = []
+    for row in list_line_schedule:
+        if "Networking event" in row:
+            row = row.replace(f'<a href="#{event_id}">', f'<a href="{event_url}">')
+            print("Succesfully added link to Networking event to schedule.")
+        new_list_line_schedule.append(row)
+    return new_list_line_schedule
 
 def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
     """
@@ -308,15 +324,18 @@ def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
             # check whether workshop title is scheduled
             if ws_title in dict_subm_title:
                 nettskjema_ID = dict_subm_title[ws_title]
+            elif ws_title.startswith("Networking event"):
+                # Networking event will not have description below the table
+                continue
             else:
-                print(f"Submitted proposal '{ws_title}' is not in schedule, ignoring...\n")
+                print(f"Submitted proposal '{ws_title}' is not in file '{path_subm_title}', ignoring...\n")
                 continue
             
             # check whether title is in dict with titles and internal workshop IDs
             if ws_title in dict_ids:
                 workshop_id = dict_ids[ws_title]
             else:
-                sys.exit(f"Fatal: found unknown workshop title, stemming from schedule.tsv file: '{ws_title}'")
+                sys.exit(f"Fatal: found unknown workshop title, stemming from '{path_schedule}' file: '{ws_title}'")
             
             html_section = '<hr class="double"><div id="'
             html_section += workshop_id
@@ -371,12 +390,16 @@ def write_html(table_header_schedule, list_line_schedule, list_html_section):
     file.write(html_all)
     file.close()
 
-def write_ical(outdir_ics, dict_id_timeslot):
+def write_ical(outdir_ics, dict_id_timeslot, event_name):
     """
     Write individual ics files for each workshop
     """
     # Create ical folder if necessary
     Path(outdir_ics).mkdir(parents=True, exist_ok=True)
+    # Remove any existing .ics files
+    for ics_file in Path(outdir_ics).glob('*.ics'): 
+        if ics_file.is_file():
+            ics_file.unlink()
 
     for id in dict_id_timeslot:
         # catch empty entries
@@ -387,6 +410,7 @@ def write_ical(outdir_ics, dict_id_timeslot):
                             dict_id_timeslot[id]['room'],
                             dict_room[dict_id_timeslot[id]['room']]['url'],
                             dict_id_timeslot[id]['title'],
+                            event_name,
                             )
         outpath_ics = os.path.join(outdir_ics, id + ".ics")
         with open(outpath_ics, 'w') as file:
@@ -394,18 +418,30 @@ def write_ical(outdir_ics, dict_id_timeslot):
 
 
 if  __name__ == '__main__':
+
+    """
+    Update each year
+    """
+    event_name = 'Oslo Bioinformatics Workshop Week 2023'
+    pre_register_link = "https://nettskjema.no/a/375340?CBworkshop="
+    post_register_link = "&LCKworkshop=true"
     
+    ics_folder = "https://www.mn.uio.no/sbi/english/events/oslo-bioinformatics-workshop-week-2023/ics_files/"
+
+    networking_event_url = "https://www.mn.uio.no/sbi/english/events/oslo-bioinformatics-workshop-week-2023/networking-event-panel-discussion"
+    """
+    Update for each year if necessary
+    """
     path_tsv = "survey_results.tsv" # tsv dump of nettskjema with proposals
     path_subm_title = "submission_title.tsv" # extracted from survey_results.tsv,  with only nettskjema ID and title, edited
     path_schedule = "schedule.tsv" # tsv dump of Google sheet with schedule
     outfile = "workshop_content.html"
     outdir_ics = "ical"
     
-    pre_register_link = "https://nettskjema.no/a/296327?CBworkshop="
-    post_register_link = "&LCKworkshop=true"
-    
-    ics_folder = "https://www.mn.uio.no/sbi/english/events/oslo-bioinformatics-week-2022/ics_files/"
 
+    """
+    Update when nettskjema a questions have changed.
+    """
     id_column = 'NR'
     title_column = 'Title of the workshop'
     form_column = 'form_link'
@@ -418,6 +454,9 @@ if  __name__ == '__main__':
     material_column = 'Please indicate what you expect your audience need to bring to the workshop'
     target_column = 'What is the target audience for your workshop?'
 
+    """
+    Update when Google sheet with schedule column names have changed.
+    """
     schedule_date_column = "Date"
     schedule_time_column = "Time"
     schedule_title_column = "Workshop name"
@@ -426,6 +465,9 @@ if  __name__ == '__main__':
     schedule_main_instructor_column = 'Instructor 1'
     schedule_helper_instructor_column = 'Instructor 2'
 
+    """
+    Update when rooms (details) have changed
+    """
     dict_room = {
         'Sed': 
             {
@@ -456,14 +498,23 @@ if  __name__ == '__main__':
             {
                 'name': 'Postscript (room 2458) in Ole-Johan Dahls hus (OJD)',
                 'url': 'https://use.mazemap.com/#v=1&config=uio&center=10.718931,59.943959&zoom=18&sharepoitype=poi&sharepoi=1000987608&zlevel=2&campusid=799'
+            },
+        'Auditorium Smalltalk':
+            {
+                'name': 'Auditorium Smalltalk, Ole Johan Dalshus (OJD)',
+                'url': 'https://use.mazemap.com/?campusid=799&sharepoitype=identifier&sharepoi=GA06-1416&config=uio'
             }
     }
+
+    ################################
+    #     Here the work starts     #
+    ################################
 
     # obtain nettskjema submission ID and title dict
     dict_subm_title = get_submission_ID_dict(path_subm_title)
 
     # parse schedule into dicts
-    dict_schedule_final, dict_id_timeslot, dict_ids = read_schedule(path_schedule)
+    dict_schedule_final, dict_id_timeslot, dict_ids, networking_event_id = read_schedule(path_schedule)
     
     # read and parse workshop descriptions
     list_html_section = read_workshops(path_tsv, dict_subm_title, dict_ids)
@@ -471,8 +522,15 @@ if  __name__ == '__main__':
     # create schedule table html
     table_header_schedule, list_line_schedule = create_schedule_table(dict_schedule_final)
 
+    # adjust for Networking event: should link to its own webpage
+    list_line_schedule = adjust_event(list_line_schedule, networking_event_id, networking_event_url)
+
     # collect all output in html format
     write_html(table_header_schedule, list_line_schedule, list_html_section)
 
     # write ical files
-    write_ical(outdir_ics, dict_id_timeslot)
+    write_ical(outdir_ics, dict_id_timeslot, event_name)
+
+    print("Success! Output files written to disk.")
+    print(f"Use '{outfile}' as raw html for the workshop website.")
+    print(f"Copy '*.ics' files in the '{outdir_ics}' folder so that they are in {ics_folder}.")
