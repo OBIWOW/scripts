@@ -481,6 +481,8 @@ if  __name__ == '__main__':
 
     """
     Update when rooms (details) have changed
+    IMPORTANT keep the room number (e.g. Sed (room 1454)'),
+    as this information will be part of the calender entry file.
     """
     dict_room = {
         'Sed (room 1454)': 
