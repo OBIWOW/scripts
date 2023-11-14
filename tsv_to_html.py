@@ -369,12 +369,13 @@ def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
         
     return list_html_section
 
-def write_html(table_header_schedule, list_line_schedule, list_html_section):
+def write_html(table_header_schedule, list_line_schedule, list_html_section, footer_file):
     """
     Collect all html information and write to file
     """
     html_all = '<h2>Agenda</h2>'
 
+    # add table
     html_all += table_header_schedule
     
     for line in list_line_schedule:
@@ -382,11 +383,17 @@ def write_html(table_header_schedule, list_line_schedule, list_html_section):
 
     html_all += '</table><br>'         
 
+    # add content from footer.html
+    with open(footer_file, "r") as fh:
+        footer_content = fh.readlines()
+    html_all += "\n" + "\n".join(footer_content) + "\n"
+
+    # add workshop descriptions
     for section in list_html_section:
         html_all += section + "\n" 
 
     # write the final html
-    file=open(outfile,'w')
+    file = open(outfile,'w')
     file.write(html_all)
     file.close()
 
@@ -435,6 +442,7 @@ if  __name__ == '__main__':
     path_tsv = "survey_results.tsv" # tsv dump of nettskjema with proposals
     path_subm_title = "submission_title.tsv" # extracted from survey_results.tsv,  with only nettskjema ID and title, edited
     path_schedule = "schedule.tsv" # tsv dump of Google sheet with schedule
+    footer = "footer.html" # html file with text to be added below the schedule
     outfile = "workshop_content.html"
     outdir_ics = "ical"
     
@@ -469,17 +477,17 @@ if  __name__ == '__main__':
     Update when rooms (details) have changed
     """
     dict_room = {
-        'Sed': 
+        'Sed (room 1454)': 
             {
             'name': 'Sed (room 1454) in Ole-Johan Dahls hus (OJD)',
             'url': 'https://use.mazemap.com/#v=1&config=uio&center=10.718810,59.943890&zoom=18&sharepoitype=poi&sharepoi=1000987466&zlevel=1&campusid=799',
             },
-        'Perl': 
+        'Perl (room 2453)': 
             {
             'name': 'Perl (room 2453) in Ole-Johan Dahls hus (OJD)',
             'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.718834,59.943903&zoom=18&sharepoitype=poi&sharepoi=1000987629&campusid=801',
             },
-        'Python': 
+        'Python (room 2269)': 
             {
             'name': 'Python (room 2269) in Ole-Johan Dahls hus (OJD)',
             'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.719242,59.944188&zoom=18&sharepoitype=poi&sharepoi=1000987605&campusid=799',
@@ -489,12 +497,12 @@ if  __name__ == '__main__':
             'name': 'Hox (Computer lab, room 3205) Kristine Bonnevieshus',
             'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=3&center=10.723863,59.938264&zoom=18&sharepoitype=poi&sharepoi=1000974921&campusid=799',
             },
-        'Prolog':
+        'Prolog (room 2465)':
             {
                 'name': 'Prolog (room 2465) in Ole-Johan Dahls hus (OJD)',
                 'url': 'https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.719105,59.944047&zoom=18&sharepoitype=poi&sharepoi=1000987623&campusid=799'
             },
-        'Postscript':
+        'Postscript (room 2458)':
             {
                 'name': 'Postscript (room 2458) in Ole-Johan Dahls hus (OJD)',
                 'url': 'https://use.mazemap.com/#v=1&config=uio&center=10.718931,59.943959&zoom=18&sharepoitype=poi&sharepoi=1000987608&zlevel=2&campusid=799'
@@ -526,7 +534,7 @@ if  __name__ == '__main__':
     list_line_schedule = adjust_event(list_line_schedule, networking_event_id, networking_event_url)
 
     # collect all output in html format
-    write_html(table_header_schedule, list_line_schedule, list_html_section)
+    write_html(table_header_schedule, list_line_schedule, list_html_section, footer)
 
     # write ical files
     write_ical(outdir_ics, dict_id_timeslot, event_name)
