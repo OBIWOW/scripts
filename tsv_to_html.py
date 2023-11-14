@@ -336,7 +336,13 @@ def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
                 workshop_id = dict_ids[ws_title]
             else:
                 sys.exit(f"Fatal: found unknown workshop title, stemming from '{path_schedule}' file: '{ws_title}'")
-            
+
+            # in case of multiple submissions for the same workshop,
+            # take the one from the path_subm_title file (submission_title.tsv)
+            if nettskjema_ID != row[id_column]:
+                # this is not the correct one, skip
+                continue
+
             html_section = '<hr class="double"><div id="'
             html_section += workshop_id
             html_section += '"><h2>'
@@ -366,7 +372,7 @@ def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
             html_section += '</p><a href="#table_sched">Go back</a></div>'
             
             list_html_section.append(html_section)
-        
+
     return list_html_section
 
 def write_html(table_header_schedule, list_line_schedule, list_html_section, footer_file):
