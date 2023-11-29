@@ -11,8 +11,8 @@ def do_cmd(cmd, dryrun = False):
     if dryrun:
         print(f"Would be running: {cmd}")
         return
-    else:
-        print(f"Will run: {cmd}")
+    #else:
+    #    print(f"Will run: {cmd}")
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     if result.stdout:
         #sys.exit(result.stdout)
