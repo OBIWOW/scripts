@@ -135,8 +135,8 @@ if  __name__ == '__main__':
                 html_body += '<ul>'
                 for workshop in dict_person_info[mail][key_workshop]['accepted']:
                     html_body += '<li><strong>' 
-                    html_body += '<a href="' + website_link + dict_schedule_final[workshop]['key'] + '" >' + workshop + '</a> </strong>'
-                    html_body += ' at ' + dict_schedule_final[workshop]['timeslot'] + " on " + datetime.strptime(dict_schedule_final[workshop]['date'], '%d.%m.%y').strftime("%A %d %B") +' (<a href="' + ics_folder + dict_schedule_final[workshop]['key'] + '.ics">Add to calendar</a>)'
+                    html_body += '<a href="' + website_link + "#" + dict_schedule_final[workshop]['key'] + '" >' + workshop + '</a> </strong>'
+                    html_body += ' at ' + dict_schedule_final[workshop]['timeslot'] + " on " + datetime.strptime(dict_schedule_final[workshop]['date'], '%d.%m.%y').strftime("%A %d %B") +' (<a href="' + ics_folder + "/" + dict_schedule_final[workshop]['key'] + '.ics">Add to calendar</a>)'
                     html_body += '</li>'
                 html_body += '</ul>'
             if dict_person_info[mail][key_workshop]['waiting']:
