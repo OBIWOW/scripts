@@ -3,6 +3,7 @@ from collections import OrderedDict
 from datetime import datetime
 from pprint import pprint
 from pathlib import Path
+import json
 import os, sys
 
 """
@@ -164,6 +165,7 @@ def read_schedule(schedule_file):
             dict_id_timeslot[row[schedule_id_column]]['main_instructor'] = row[schedule_main_instructor_column]
             dict_id_timeslot[row[schedule_id_column]]['helper'] = row[schedule_helper_instructor_column]
             dict_id_timeslot[row[schedule_id_column]]['title'] = row[schedule_title_column].strip()
+            dict_id_timeslot[row[schedule_id_column]]['max_attendance'] = int(row[schedule_max_attendance])
 
             ws_title = row[schedule_title_column].strip()
             ws_internal_id = row[schedule_id_column]
@@ -478,6 +480,7 @@ if  __name__ == '__main__':
     schedule_room_column = 'Room in Ole Johan Dalshus'
     schedule_main_instructor_column = 'Instructor 1'
     schedule_helper_instructor_column = 'Instructor 2'
+    schedule_max_attendance = 'Max capacity'
 
     """
     Update when rooms (details) have changed
@@ -532,6 +535,10 @@ if  __name__ == '__main__':
     # parse schedule into dicts
     dict_schedule_final, dict_id_timeslot, dict_ids, networking_event_id = read_schedule(path_schedule)
     
+    # write dict_id_timeslot to file for other scripts to use
+    with open ("schedule.json", "w") as schedule_out:
+        schedule_out.write(json.dumps(dict_id_timeslot))
+
     # read and parse workshop descriptions
     list_html_section = read_workshops(path_tsv, dict_subm_title, dict_ids)
 
