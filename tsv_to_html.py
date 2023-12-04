@@ -307,7 +307,7 @@ def adjust_event(list_line_schedule, event_id, event_url):
         new_list_line_schedule.append(row)
     return new_list_line_schedule
 
-def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
+def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids, registration_is_open = True):
     """
     Parse workshop description nettkjema tsv dump
     into a list of html-formatted sections
@@ -355,9 +355,10 @@ def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids):
             html_section += '<a rel="noreferrer noopener" target="_blank" href="' + ics_folder + workshop_id + '.ics">Add to calendar</a>'
             html_section += '</p><strong><u>Room</u>:</strong> '
             html_section += make_room_url(dict_id_timeslot[workshop_id]['room'], dict_room)
-            html_section += '<p><a rel="noreferrer noopener" target="_blank" href="'
-            html_section += pre_register_link + row[title_column].strip().replace(" ", "_") + post_register_link
-            html_section += '">Register here</a></p><p></p><h3>Description</h3><p align="justify">'
+            if registration_is_open:
+                html_section += '<p><a rel="noreferrer noopener" target="_blank" href="'
+                html_section += pre_register_link + row[title_column].strip().replace(" ", "_") + post_register_link
+                html_section += '">Register here</a></p><p></p><h3>Description</h3><p align="justify">'
             html_section += row[description_column]
             html_section += '</p><div style="background-color:#b6efed;width:90%;border-radius: 15px;padding: 10px;margin-left: auto;margin-right: auto;"><p><h4>Learning outcomes</h4>'
             html_section += html_list_outcome(row[outcome_column])
@@ -437,6 +438,11 @@ if  __name__ == '__main__':
     """
     Update each year
     """
+
+    # set to False one registration is closed
+    # generate workshop_content again to remove registration links
+    registration_open = False
+
     event_name = 'Oslo Bioinformatics Workshop Week 2023'
     pre_register_link = "https://nettskjema.no/a/375340?CBworkshop="
     post_register_link = "&LCKworkshop=true"
@@ -540,7 +546,7 @@ if  __name__ == '__main__':
         schedule_out.write(json.dumps(dict_id_timeslot))
 
     # read and parse workshop descriptions
-    list_html_section = read_workshops(path_tsv, dict_subm_title, dict_ids)
+    list_html_section = read_workshops(path_tsv, dict_subm_title, dict_ids, registration_open)
 
     # create schedule table html
     table_header_schedule, list_line_schedule = create_schedule_table(dict_schedule_final)
