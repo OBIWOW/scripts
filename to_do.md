@@ -7,9 +7,10 @@
     * location of ical files
     * url of nettskjema for registration
 * `tsv_to_html.py`
+  * workshop description: add a newline after workshop location
   * gets names of instructors and co-instructors from Schedule Google Sheet,
     should probably be from the nettskjems with proposals
   * should write out a list of workshop names and the shorthand (without spaces etc)
     that is used for the registration nettsjema.
-    This can then be read by `registration_mail.py`
+    This can then be read by `registration_mail.py` and `evaluation.py`
 * Tackle `&` in workshop names for shorthand, currently it truncates at the `&`
