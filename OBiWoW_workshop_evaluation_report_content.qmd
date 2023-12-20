@@ -1,0 +1,159 @@
+
+```{python}
+import pandas as pd
+from matplotlib import pyplot as plt
+plt.style.use('ggplot')
+from IPython.display import display, Markdown
+import subprocess
+```
+
+```{python}
+def get_workshop_responses(all_responses, this_workshop):
+    """
+
+    """
+    # get responses for this workshop
+    if this_workshop == "All workshops":
+        return all_responses
+    else:
+        return all_responses[all_responses["Which workshop are you writing your answers for?"] == this_workshop]
+
+def get_question_responses(these_responses, this_topic, all_topics):
+    question_responses = ''
+    comments = ''
+    # get responses for a topic
+    this_question = all_topics[this_topic][0] # e.g. "Did you find the workshop useful?"
+    this_comment = all_topics[this_topic][1] # e.g. "Comments (useful)"
+    if this_question:
+        question_responses = these_responses[this_question].value_counts()
+    if this_comment:
+        comments = these_responses[these_responses[this_comment].notna()][this_comment]
+    
+    return this_question, question_responses, comments
+
+def make_plot(this_topic, this_question, these_question_responses):
+    # case: background
+    if this_topic == 'background':
+        r = these_question_responses.to_dict()
+        plt.barh(list(r.keys()), list(r.values()))
+    # case: scale from 1-5"
+    elif this_topic in ['useful', 'lectures', 'practicals', 'overall']:
+        r = {1:0, 2:0, 3:0, 4:0, 5:0}
+        for response in r.keys():
+            if response in these_question_responses:
+                r[response] = these_question_responses[response]
+        plt.bar(list(r.keys()), list(r.values()))
+    # case: Yes/No
+    else:
+        r = {"No": 0, "Yes":0}
+        for response in r.keys():
+            if response in these_question_responses:
+                r[response] = int(these_question_responses[response])
+        plt.bar(list(r.keys()), list(r.values()))
+    
+    
+    #plt.title(this_question)
+    plt.xlabel('Response')
+    plt.ylabel('Count')
+    plt.show()
+
+def run(all_responses, this_workshop, this_topic, topics):
+    workshop_responses = get_workshop_responses(all_responses, this_workshop)
+    question, question_responses, comments = get_question_responses(workshop_responses, this_topic, topics)
+    if len(question_responses):
+        make_plot(this_topic, question, question_responses)
+    # Comments
+    if len(comments):
+        display(Markdown('<strong>{}</strong><br/>'.format("Comments to the above question:")))
+        for comment in comments:
+            display(Markdown(f'- {comment}'))
+```
+
+```{python}
+# define topics and comments
+topics = {
+'background' : ['What is your main background?', ''],
+'useful' : ['Did you find the workshop useful?', 'Unnamed: 4'],
+'lectures': ['How would you rate the level of the lectures?',
+ 'Unnamed: 6'],
+'practicals': ['How would you rate the practical sessions? ',
+ 'Unnamed: 8'],
+'combination': ['Was this a useful combination of skills to learn in this manner?',
+ 'Unnamed: 10'],
+'overall': ['What is your overall impression of the workshop?',
+ 'Unnamed: 12'],
+'recommend': ['Would you recommend this workshop to your colleagues? ',
+ 'Unnamed: 14'],
+'further_comments': ['', 'Do you have further comments or suggestions?']
+}
+# other topics
+background = "What is your main background?"
+other = "Do you have further comments or suggestions?"
+```
+
+```{python}
+responses = pd.read_csv(path_evaluation)
+```
+
+```{python}
+num_responses = len(get_workshop_responses(responses, workshop_title))
+display(Markdown(f'Number of responses: {num_responses}'))
+```
+
+# What is your main background?
+
+```{python}
+topic = "background"
+run(responses, workshop_title, topic, topics)
+```
+
+# Did you find the workshop useful?
+
+```{python}
+topic = "useful"
+run(responses, workshop_title, topic, topics)
+```
+
+# How would you rate the level of the lectures?
+
+```{python}
+topic = "lectures"
+run(responses, workshop_title, topic, topics)
+```
+
+# How would you rate the practical sessions?
+
+```{python}
+topic = "practicals"
+run(responses, workshop_title, topic, topics)
+```
+
+# Was this a useful combination of skills to learn in this manner?
+
+```{python}
+topic = "combination"
+run(responses, workshop_title, topic, topics)
+```
+
+# What is your overall impression of the workshop?
+
+```{python}
+topic = "overall"
+run(responses, workshop_title, topic, topics)
+```
+
+# Would you recommend this workshop to your colleagues? 
+
+```{python}
+topic = "recommend"
+run(responses, workshop_title, topic, topics)
+```
+
+# Do you have further comments or suggestions?
+
+```{python}
+topic = "further_comments"
+run(responses, workshop_title, topic, topics)
+```
+
+
