@@ -160,13 +160,3 @@ if  __name__ == '__main__':
         filepath.parent.mkdir(parents=True, exist_ok=True)
         with filepath.open("w") as fh:
             fh.write("\n".join(workshop_email_dict[workshop]))
-        #with open(out_file, "w") as fh:
-#        print(out_file + "\n" + "\n".join(workshop_email_dict[workshop]))
-        #with open(workshop_email_folder)
-
-    # print(len(dict_person_info))
-    
-    
-    # html_res = mail_template_greeting + "Person One" + mail_template_welcome + '<ul><li>workshop 1 (<a href="https://www.mn.uio.no/sbi/english/events/oslo-bioinformatics-week-2022/ics_files/02.ics">Add to calendar</a>)</li></ul>' + mail_template_end
-
-
