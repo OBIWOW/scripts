@@ -445,7 +445,7 @@ if  __name__ == '__main__':
     registration_open = False
 
     event_name = 'Oslo Bioinformatics Workshop Week 2023'
-    pre_register_link = "https://nettskjema.no/a/375340?CBworkshop="
+    pre_register_link = "https://nettskjema.no/a/467704?CBworkshop="
     post_register_link = "&LCKworkshop=true"
     
     ics_folder = "https://www.mn.uio.no/sbi/english/events/oslo-bioinformatics-workshop-week-2023/ics_files/"
@@ -460,7 +460,6 @@ if  __name__ == '__main__':
     footer = "footer.html" # html file with text to be added below the schedule
     outfile = "workshop_content.html"
     outdir_ics = "ical"
-    subm_delim = ";"
 
     """
     Update when nettskjema a questions have changed.
@@ -476,6 +475,7 @@ if  __name__ == '__main__':
     duration_column = 'Length of the workshop (e.g., 2 hours, half a day or a whole day)'
     material_column = 'Please indicate what you expect your audience need to bring to the workshop'
     target_column = 'What is the target audience for your workshop?'
+    subm_delim = ";"
 
     """
     Update when Google sheet with schedule column names have changed.
