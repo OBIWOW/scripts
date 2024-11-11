@@ -138,7 +138,7 @@ END:VCALENDAR"
     
     return ics_header
     
-def read_schedule(schedule_file):
+def read_schedule(schedule_file, delimiter):
     """
     Read schedule tsv and creates dicts
     NOTE workshops should have a unique number in the 'Number' column
@@ -150,7 +150,7 @@ def read_schedule(schedule_file):
     dict_title_wsids = {} # keys: workshop title; values: workshop internal ID
 
     with open(schedule_file, newline='') as csvfile:
-        data = csv.DictReader(csvfile, delimiter = '\t')
+        data = csv.DictReader(csvfile, delimiter = delimiter)
         for row in data:
             
             if row[schedule_id_column] not in dict_id_name:
@@ -173,6 +173,7 @@ def read_schedule(schedule_file):
             # Obtain id of netwoking event
             if ws_title.startswith("Networking event"):
                 networking_event_id = ws_internal_id
+            else: networking_event_id = None
             
             if date not in dict_schedule_final:
                 dict_schedule_final[date] = {}
@@ -211,14 +212,14 @@ def read_schedule(schedule_file):
     dict_schedule_final = OrderedDict(sorted(dict_schedule_final.items()))
     return dict_schedule_final, dict_id_timeslot, dict_title_wsids, networking_event_id
 
-def get_submission_ID_dict(submission_title_file):
+def get_submission_ID_dict(submission_title_file, delimiter):
     """
     Read in file with nettskjema IDs and workshop titles.
     Return dict with as keys: title, as values: nettskjema ID
     """
     submission_ID_dict = {}
     with open(submission_title_file, newline='') as csvfile:
-        data = csv.DictReader(csvfile, delimiter = '\t')
+        data = csv.DictReader(csvfile, delimiter = delimiter)
         for row in data:
             submission_ID_dict[row[title_column]] = row[id_column]
     return submission_ID_dict
@@ -307,14 +308,14 @@ def adjust_event(list_line_schedule, event_id, event_url):
         new_list_line_schedule.append(row)
     return new_list_line_schedule
 
-def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids, registration_is_open = True):
+def read_workshops(workshop_description_tsv, dict_subm_title, dict_ids, delimiter, registration_is_open = True):
     """
     Parse workshop description nettkjema tsv dump
     into a list of html-formatted sections
     Create dict of nettskjema ID and internal workshop ID
     """
     with open(workshop_description_tsv, newline='') as csvfile:
-        data = csv.DictReader(csvfile, delimiter = '\t')
+        data = csv.DictReader(csvfile, delimiter = delimiter)
         list_html_section = []
         list_table = []
         
@@ -453,18 +454,18 @@ if  __name__ == '__main__':
     """
     Update for each year if necessary
     """
-    path_tsv = "survey_results.tsv" # tsv dump of nettskjema with proposals
-    path_subm_title = "submission_title.tsv" # extracted from survey_results.tsv,  with only nettskjema ID and title, edited
+    path_tsv = "survey_results.csv" # csv dump of nettskjema with proposals
+    path_subm_title = "submission_title.csv" # extracted from survey_results.csv,  with only nettskjema ID and title, edited
     path_schedule = "schedule.tsv" # tsv dump of Google sheet with schedule
     footer = "footer.html" # html file with text to be added below the schedule
     outfile = "workshop_content.html"
     outdir_ics = "ical"
-    
+    subm_delim = ";"
 
     """
     Update when nettskjema a questions have changed.
     """
-    id_column = 'NR'
+    id_column = '$submission_id'
     title_column = 'Title of the workshop'
     form_column = 'form_link'
     description_column = 'A short description of your workshop (max 250 words)'
@@ -536,17 +537,17 @@ if  __name__ == '__main__':
     ################################
 
     # obtain nettskjema submission ID and title dict
-    dict_subm_title = get_submission_ID_dict(path_subm_title)
+    dict_subm_title = get_submission_ID_dict(path_subm_title, subm_delim)
 
     # parse schedule into dicts
-    dict_schedule_final, dict_id_timeslot, dict_ids, networking_event_id = read_schedule(path_schedule)
+    dict_schedule_final, dict_id_timeslot, dict_ids, networking_event_id = read_schedule(path_schedule, delimiter = "\t")
     
     # write dict_id_timeslot to file for other scripts to use
     with open ("schedule.json", "w") as schedule_out:
         schedule_out.write(json.dumps(dict_id_timeslot))
 
     # read and parse workshop descriptions
-    list_html_section = read_workshops(path_tsv, dict_subm_title, dict_ids, registration_open)
+    list_html_section = read_workshops(path_tsv, dict_subm_title, dict_ids, subm_delim, registration_open)
 
     # create schedule table html
     table_header_schedule, list_line_schedule = create_schedule_table(dict_schedule_final)
