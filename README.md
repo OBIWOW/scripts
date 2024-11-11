@@ -9,9 +9,9 @@ Scripts have variables that need to be updated each year.
 Script: `tsv2html.py`
 
 Input:
-* `survey_results.tsv` --> Tab Separated Values export of the nettskjema
+* `survey_results.csv` --> Semi-colon Separated Values export of the nettskjema
    with the proposals
-* `submission_title.tsv`--> two column tsv file with only nteeskjema submission ID
+* `submission_title.csv`--> two column csv file with only nettskjema submission ID
    and workshop Title
   * Sometimes folks resubmit their proposal, or proposals get withdrawn.
 * `schedule.tsv` --> Tab Separated Values export of the schedule Google Sheet
@@ -23,6 +23,21 @@ Output:
 * Folder `ical` with calendar files to be added to Vortex
 
 Example nettskjema: [2023 call for proposals](https://nettskjema.no/user/form/355618/view)
+
+### Step-by-step
+
+1. Go to the "Call for Workshop Proposals" Nettskjema. Click on "Se resultater." Under "Last ned svar", click "Last ned kommaseparert fil (.txt)"
+2. Rename the resulting file to `survey_results.csv` and move it to the OBiWoW code directory.
+3. To create the `submission_title.csv` file, run:
+
+```
+cut -d\; -f1,6 < survey_results.csv > submission_title.csv
+```
+
+4. If necessary, modify the `submission_title.csv` to remove any workshops that have withdrawn.
+5. Go to the "Schedule" Google Sheet. Click on File > Download > Tab Separated Values (.tsv) and download a tsv of the spreadsheet.
+6. Rename the resulting file to `schedule.tsv` and move it to the OBiWoW code directory.
+7. Run `python tsv2html.py`
 
 ## Checking registrations
 
