@@ -15,6 +15,7 @@ Input:
    and workshop Title
   * Sometimes folks resubmit their proposal, or proposals get withdrawn.
 * `schedule.tsv` --> Tab Separated Values export of the schedule Google Sheet
+* `footer.html` --> 
 
 Output:
 * `workshop_content.html` --> HTML file for adding to the website
