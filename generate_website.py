@@ -1,6 +1,8 @@
 import sys
 
-from data_reader_parser import merge_submission_schedule
+import pandas as pd
+
+from data_reader_parser import merge_submission_schedule, add_start_end_time_to_schedule
 from obiwow.data_reader_parser import parse_yaml, parse_csv_to_pandas, get_submission_ID_dict, read_schedule
 from obiwow.tsv_to_html import read_workshops, create_schedule_table
 #     get_submission_ID_dict, read_schedule, read_workshops, create_schedule_table,
@@ -49,8 +51,9 @@ def generate_html():
     # Read and parse workshop descriptions
     df_submissions = parse_csv_to_pandas(paths['input']['survey_results']['file_path'], paths['input']['survey_results']['delimiter'])
     df_schedule = parse_csv_to_pandas(paths['input']['schedule']['file_path'], paths['input']['schedule']['delimiter'])
+    df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)
 
-    df_merge_submission_schedule =  merge_submission_schedule(df_submissions, df_schedule, nettskjema_columns, schedule_columns)
+    df_merge_submission_schedule = merge_submission_schedule(df_submissions, df_schedule, nettskjema_columns, schedule_columns)
 
     test = generate_workshop_body(df_merge_submission_schedule,
                                     nettskjema_columns,
@@ -61,47 +64,10 @@ def generate_html():
     with(open('test.html', 'w')) as f:
         for line in test:
             f.write(line + '\n')
-    # print(''.join(test))
-    # print(df_submissions)
-    #
-    #
-    # # obtain nettskjema submission ID and title dict
-    # dict_subm_title = get_submission_ID_dict(df_submissions, nettskjema_columns)
-    #
-    # print('dict_subm_title')
-    # pprint(dict_subm_title)
-    # dict_subm_title = {v: k for k, v in dict_subm_title.items()}
-    #
-    # # parse schedule into dicts
-    # dict_schedule_final, dict_id_timeslot, dict_ids, networking_event_id = read_schedule(
-    #     df_schedule, schedule_columns
-    # )
-    #
-    # # pprint(dict_schedule_final)
-    # # print('dict_id_timeslot')
-    # # pprint(dict_id_timeslot)
-    # # print('dict_ids')
-    # # pprint(dict_ids)
-    # # print(networking_event_id)
-    #
-    #
-    # # write dict_id_timeslot to file for other scripts to use
-    # with open(paths['output']['schedule_json']['file_path'], "w") as schedule_out:
-    #     schedule_out.write(json.dumps(dict_id_timeslot))
-    #
-    # # read and parse workshop descriptions
-    # list_html_section = read_workshops(
-    #     paths['input']['survey_results']['file_path'],
-    #     dict_subm_title, dict_ids,
-    #     paths['input']['survey_results']['delimiter'],
-    #     dict_id_timeslot,
-    #     yearly,
-    #     rooms,
-    #     registration_open
-    # )
 
-    # print('list_html_section')
-    # pprint(list_html_section)
+    # print full dataframes
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(df_merge_submission_schedule)
 
     # create schedule table html
     # table_header_schedule, list_line_schedule = create_schedule_table(dict_schedule_final)

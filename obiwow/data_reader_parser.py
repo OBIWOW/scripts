@@ -1,7 +1,90 @@
 from __future__ import annotations
 
+import re
+from datetime import timedelta, datetime
+from typing import Tuple
+
 import yaml
 import pandas as pd
+
+
+def add_duration_to_time(start_time_str, duration_str):
+    duration_str = duration_str.strip()
+    # Parse the start time
+    start_time = datetime.strptime(start_time_str, '%H:%M')
+
+    # Parse the duration
+    duration_match = re.match(r'(\d+)\s*(min|hours?)', duration_str)
+    print('duration------------', duration_match, duration_str)
+    if not duration_match:
+        print(f'Invalid duration format {duration_str}')
+        # return 12:00 as default if start time is 9:00
+        if start_time_str == '9:00':
+            return '12:00'
+        # return 16:00 as default if start time is 13:00
+        elif start_time_str == '13:00':
+            return '16:00'
+
+    duration_value = int(duration_match.group(1))
+    duration_unit = duration_match.group(2)
+
+    # Calculate the timedelta
+    if 'hour' in duration_unit:
+        duration = timedelta(hours=duration_value)
+    elif 'min' in duration_unit:
+        duration = timedelta(minutes=duration_value)
+    else:
+        raise ValueError("Invalid duration unit")
+
+    # Add the duration to the start time
+    end_time = start_time + duration
+
+    return end_time.strftime('%H:%M')
+
+
+def get_start_end_time(data, schedule_columns: dict) -> tuple[str | None, str | None]:
+    workshop_date = datetime.strptime(data[schedule_columns['date_column']], '%d.%m.%y').strftime("%A %d %B %Y")
+    workshop_start_time = None
+    workshop_end_time = None
+    if data[schedule_columns['duration_column']] == 'all day':
+        workshop_start_time = '9:00'
+        workshop_end_time = '16:00'
+    elif data[schedule_columns['time_column']] == 'morning':
+        # If no duration is given, default to 9:00-12:00
+        if str(data[schedule_columns['duration_column']]) == 'nan':
+            workshop_start_time = '9:00'
+            workshop_end_time = '12:00'
+        elif str(data[schedule_columns['duration_column']]) == 'half a day':
+            workshop_start_time = '9:00'
+            workshop_end_time = '12:00'
+        else:
+            workshop_start_time = '9:00'
+            workshop_end_time = add_duration_to_time('9:00', str(data[schedule_columns['duration_column']]))
+    elif data[schedule_columns['time_column']] == 'afternoon':
+        # If no duration is given, default to 13:00-16:00
+        if str(data[schedule_columns['duration_column']]) == 'nan':
+            workshop_start_time = '13:00'
+            workshop_end_time = '16:00'
+        elif str(data[schedule_columns['duration_column']]) == 'half a day':
+            workshop_start_time = '13:00'
+            workshop_end_time = '16:00'
+        else:
+            workshop_start_time = '13:00'
+            workshop_end_time = add_duration_to_time('13:00', str(data[schedule_columns['duration_column']]))
+
+
+    return workshop_start_time, workshop_end_time
+
+
+def add_start_end_time_to_schedule(schedule_df: pd.DataFrame, schedule_columns: dict) -> pd.DataFrame:
+    schedule_df[schedule_columns['start_time_column']] = None
+    schedule_df[ schedule_columns['end_time_column']] = None
+    for index, row in schedule_df.iterrows():
+        start_time, end_time = get_start_end_time(row, schedule_columns)
+        schedule_df.at[index, schedule_columns['start_time_column']] = start_time
+        schedule_df.at[index, schedule_columns['end_time_column']] = end_time
+
+    return schedule_df
 
 
 def parse_yaml(path_conf: str) -> dict | None:
@@ -81,8 +164,8 @@ def merge_submission_schedule(sumbmission_df: pd.DataFrame, schedule_df: pd.Data
     print(sumbmission_df)
     print(schedule_df)
     merged_df = pd.merge(sumbmission_df, schedule_df,
-                      left_on=nettskjema_columns['title_column'],
-                      right_on=schedule_columns['title_column'],
-                        how='left'
-                      )
+                         left_on=nettskjema_columns['title_column'],
+                         right_on=schedule_columns['title_column'],
+                         how='left'
+                         )
     return merged_df

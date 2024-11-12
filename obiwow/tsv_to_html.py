@@ -1,7 +1,7 @@
 import csv
 import re
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 from pathlib import Path
 import json
@@ -15,7 +15,20 @@ See below just after
 """
 
 
+
 def room_info(data, dict_room: dict, schedule_columns: dict) -> tuple:
+    """
+    Get room information from schedule data.
+    If room information is not available, return a default message.
+
+    Args:
+        data (pd.Series): A row of the schedule data.
+        dict_room (dict): Dictionary containing room information.
+        schedule_columns (dict): Dictionary mapping column names for the schedule data.
+
+    Returns:
+        tuple: A tuple containing the room name and the room URL.
+    """
     room_url = None
     room_name = str(data[schedule_columns['room_column']]).strip()
     if str(room_name) != 'nan':
@@ -29,6 +42,16 @@ def room_info(data, dict_room: dict, schedule_columns: dict) -> tuple:
 
 
 def make_list(raw_string: str) -> tuple[list, bool]:
+    """
+    Split string into list of strings based on bullet points, dashes, or numbers.
+    If the string starts with a header, return the header as a separate string.
+
+    Args:
+        raw_string (str): The string to split.
+
+    Returns:
+        tuple[list, bool]: A list of strings and a boolean indicating if the first string is a header.
+    """
     split_string = []
     bool_header = False
     # Case if number. is in string in any position
@@ -71,6 +94,20 @@ def make_list(raw_string: str) -> tuple[list, bool]:
 
 def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_columns: dict, schedule_columns,
                            yearly: dict, rooms: dict) -> list:
+    """
+    Generates the HTML body for each workshop using the Mako template.
+
+    Args:
+        submission_schedule_df (pd.DataFrame): DataFrame containing the workshop schedule.
+        nettskjema_columns (dict): Dictionary mapping column names for the nettskjema data.
+        schedule_columns (dict): Dictionary mapping column names for the schedule data.
+        yearly (dict): Dictionary containing yearly configuration values.
+        rooms (dict): Dictionary containing room information.
+
+    Returns:
+        list: A list of HTML sections for each workshop.
+    """
+
     list_html_section = []
 
     for index, row in submission_schedule_df.iterrows():
@@ -78,7 +115,10 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
         workshop_id = row[nettskjema_columns['id_column']]
         workshop_title = row[nettskjema_columns['title_column']].strip()
         workshop_date = datetime.strptime(row[schedule_columns['date_column']], '%d.%m.%y').strftime(
-                "%A %d %B %Y") + ' ' + row[schedule_columns['time_column']]
+                "%A %d %B %Y")
+        workshop_time = row[schedule_columns['start_time_column']] + '-' + row[schedule_columns['end_time_column']]
+        if workshop_time == '9:00-16:00':
+            workshop_time = '9:00-12:00 13:00-16:00'
         workshop_ics_path = yearly['ics_folder'] + str(workshop_id) + '.ics'
         room_name, room_url = room_info(row, rooms, schedule_columns)
         workshop_description = row[nettskjema_columns['description_column']]
@@ -92,12 +132,14 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
         register_link = yearly['pre_register_link'] + workshop_title.replace(" ", "_") + yearly['post_register_link']
 
 
+
         # Using Mako template to render the workshop body
         workshop_body_template = Template(filename='template/workshop_body_template.html')
         workshop_body_rendered = workshop_body_template.render(
             workshop_id=workshop_id,
             workshop_title=workshop_title,
             workshop_date=workshop_date,
+            workshop_time=workshop_time,
             workshop_ics_path=workshop_ics_path,
             room_map_url=room_url,
             room_name=room_name,
@@ -115,6 +157,9 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
         list_html_section.append(workshop_body_rendered)
 
     return list_html_section
+
+def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict):
+    pass
 
 
 def html_list(raw_string):
