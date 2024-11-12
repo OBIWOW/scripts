@@ -1,0 +1,21 @@
+Sed (room 1454):
+  name: "Sed (room 1454) in Ole-Johan Dahls hus (OJD)"
+  url: "https://use.mazemap.com/#v=1&config=uio&center=10.718810,59.943890&zoom=18&sharepoitype=poi&sharepoi=1000987466&zlevel=1&campusid=799"
+Perl (room 2453):
+  name: "Perl (room 2453) in Ole-Johan Dahls hus (OJD)"
+  url: "https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.718834,59.943903&zoom=18&sharepoitype=poi&sharepoi=1000987629&campusid=801"
+Python (room 2269):
+  name: "Python (room 2269) in Ole-Johan Dahls hus (OJD)"
+  url: "https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.719242,59.944188&zoom=18&sharepoitype=poi&sharepoi=1000987605&campusid=799"
+Room 3205 IBV, Hox(Computer lab):
+  name: "Hox (Computer lab, room 3205) Kristine Bonnevieshus"
+  url: "https://use.mazemap.com/#v=1&config=uio&zlevel=3&center=10.723863,59.938264&zoom=18&sharepoitype=poi&sharepoi=1000974921&campusid=799"
+Prolog (room 2465):
+  name: "Prolog (room 2465) in Ole-Johan Dahls hus (OJD)"
+  url: "https://use.mazemap.com/#v=1&config=uio&zlevel=2&center=10.719105,59.944047&zoom=18&sharepoitype=poi&sharepoi=1000987623&campusid=799"
+Postscript (room 2458):
+  name: "Postscript (room 2458) in Ole-Johan Dahls hus (OJD)"
+  url: "https://use.mazemap.com/#v=1&config=uio&center=10.718931,59.943959&zoom=18&sharepoitype=poi&sharepoi=1000987608&zlevel=2&campusid=799"
+Auditorium Smalltalk:
+  name: "Auditorium Smalltalk, Ole Johan Dalshus (OJD)"
+  url: "https://use.mazemap.com/?campusid=799&sharepoitype=identifier&sharepoi=GA06-1416&config=uio"

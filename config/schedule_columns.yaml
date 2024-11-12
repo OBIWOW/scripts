@@ -1,0 +1,8 @@
+date_column: "Date"
+time_column: "Time"
+title_column: "Workshop name"
+id_column: "Number"
+room_column: "Room in Ole Johan Dalshus"
+main_instructor_column: "Instructor 1"
+helper_instructor_column: "Instructor 2"
+max_attendance: "Max capacity"
