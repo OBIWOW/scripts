@@ -113,6 +113,7 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
     for index, row in submission_schedule_df.iterrows():
         # Preparing data for workshop body
         workshop_id = row[nettskjema_columns['id_column']]
+        workshop_number =  row[schedule_columns['id_column']]
         workshop_title = row[nettskjema_columns['title_column']].strip()
         workshop_date = datetime.strptime(row[schedule_columns['date_column']], '%d.%m.%y').strftime(
                 "%A %d %B %Y")
@@ -136,7 +137,7 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
         # Using Mako template to render the workshop body
         workshop_body_template = Template(filename='template/workshop_body_template.html')
         workshop_body_rendered = workshop_body_template.render(
-            workshop_id=workshop_id,
+            workshop_number=workshop_number,
             workshop_title=workshop_title,
             workshop_date=workshop_date,
             workshop_time=workshop_time,
@@ -159,7 +160,19 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
     return list_html_section
 
 def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict):
-    pass
+    list_html_section = []
+    # Convert 'Date' column to datetime objects
+    schedule_df['Date'] = pd.to_datetime(schedule_df['Date'], format='%d.%m.%y')
+
+    # Sort the DataFrame by the 'Date' column
+    df_schedule = schedule_df.sort_values(by='Date')
+
+    schedule_table_template = Template(filename='template/schedule_table_template.html')
+    schedule_table_rendered = schedule_table_template.render(
+        df_schedule=schedule_df,
+        schedule_columns=schedule_columns
+    )
+    return schedule_table_rendered
 
 
 def html_list(raw_string):

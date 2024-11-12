@@ -17,6 +17,7 @@ import os
 from pprint import pprint
 
 from obiwow.tsv_to_html import generate_workshop_body
+from tsv_to_html import generate_schedule_table
 
 
 def import_all_config():
@@ -66,8 +67,15 @@ def generate_html():
             f.write(line + '\n')
 
     # print full dataframes
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    #     print(df_merge_submission_sched
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(df_merge_submission_schedule)
+        print(df_schedule)
+
+    # Create Schedule table
+    test2 = generate_schedule_table(df_schedule, schedule_columns)
+    with(open('test2.html', 'w')) as f:
+        f.write(test2)
 
     # create schedule table html
     # table_header_schedule, list_line_schedule = create_schedule_table(dict_schedule_final)

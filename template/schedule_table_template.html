@@ -1,0 +1,77 @@
+<%!
+    import pandas as pd
+%>
+<style>
+    #table_sched {
+        width: 100%;
+        margin: 20px 0;
+        border-collapse: collapse;
+    }
+    #table_sched th, #table_sched td {
+        padding: 10px;
+        text-align: left;
+    }
+    #table_sched th {
+        background-color: #f2f2f2;
+        text-align: center;
+    }
+    #table_sched tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    #table_sched tr:nth-child(odd) {
+        background-color: #ffffff;
+    }
+</style>
+<br>
+<table border="1" style="border:2px solid black;" id="table_sched">
+    <thead>
+        <tr style="border:2px solid black;">
+            <th><strong>Day</strong></th>
+            <th><strong>Morning 9:00-12:00</strong></th>
+            <th><strong>Afternoon 13:00-16:00</strong></th>
+        </tr>
+    </thead>
+    % for date, group in df_schedule.groupby(schedule_columns['date_column']):
+        <%
+            all_day_workshops = group[group[schedule_columns['duration_column']] == 'all day']
+            morning_workshops = group[(group[schedule_columns['time_column']] == 'morning') & (group[schedule_columns['duration_column']] != 'all day')]
+            afternoon_workshops = group[(group[schedule_columns['time_column']] == 'afternoon') & (group[schedule_columns['duration_column']] != 'all day')]
+            max_workshops = max(len(morning_workshops), len(afternoon_workshops))
+            total_rows = max_workshops + len(all_day_workshops)
+        %>
+        <tr style="border-top: 2px solid black;">
+            <td rowspan="${total_rows}" style="border:2px solid black;vertical-align: middle;">
+                <strong>${pd.to_datetime(date).strftime("%a %d.%m.%y")}</strong>
+            </td>
+            % for i in range(total_rows):
+                % if i < len(all_day_workshops):
+                    <td colspan="2">
+                        <p style="margin-left:10px;">
+                            <a href="#${all_day_workshops.iloc[i][schedule_columns['id_column']]}">${all_day_workshops.iloc[i][schedule_columns['title_column']]}</a>
+                        </p>
+                    </td>
+                % else:
+                    <td>
+                        % if (i - len(all_day_workshops)) < len(morning_workshops):
+                            <p style="margin-left:10px;">
+                                <a href="#${morning_workshops.iloc[i - len(all_day_workshops)][schedule_columns['id_column']]}">${morning_workshops.iloc[i - len(all_day_workshops)][schedule_columns['title_column']]}</a>
+                            </p>
+                        % endif
+                    </td>
+                    <td>
+                        % if (i - len(all_day_workshops)) < len(afternoon_workshops):
+                            <p style="margin-left:10px;">
+                                <a href="#${afternoon_workshops.iloc[i - len(all_day_workshops)][schedule_columns['id_column']]}">${afternoon_workshops.iloc[i - len(all_day_workshops)][schedule_columns['title_column']]}</a>
+                            </p>
+                        % endif
+                    </td>
+                % endif
+            </tr>
+            % if i < total_rows - 1:
+                <tr>
+            % endif
+            % endfor
+        % endfor
+    </tr>
+</table>
+<br>
