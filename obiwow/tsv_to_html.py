@@ -1,18 +1,9 @@
 import csv
 import re
-from collections import OrderedDict
-from datetime import datetime, timedelta
-from pprint import pprint
-from pathlib import Path
-import json
-import os, sys
+from datetime import datetime
+
 import pandas as pd
 from mako.template import Template
-
-"""
-To do each year: update values for websites and nettskjema.
-See below just after
-"""
 
 
 def room_info(data, dict_room: dict, schedule_columns: dict) -> tuple:

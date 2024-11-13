@@ -1,6 +1,6 @@
 from obiwow.data_reader_parser import (
     parse_yaml, parse_csv_to_pandas, merge_submission_schedule,
-    add_start_end_time_to_schedule, annotate_networking_event, write_ical_files
+    add_start_end_time_to_schedule, annotate_networking_event, write_ical_files, write_schedule_json
 )
 from obiwow.tsv_to_html import generate_workshop_body, generate_schedule_table
 
@@ -62,6 +62,8 @@ def generate_html() -> None:
         file.write("\n".join(list_workshop_body))
 
     write_ical_files(df_merge_submission_schedule, paths['output']['ics']['dir_path'], schedule_columns, rooms, yearly)
+
+    write_schedule_json(df_schedule, schedule_columns, paths['output']['schedule_json']['file_path'])
 
     print("Success! Output files written to disk.")
     print(f"Use '{paths['output']['html']['file_path']}' as raw html for the workshop website.")

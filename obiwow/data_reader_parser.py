@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from datetime import timedelta, datetime
@@ -245,3 +246,30 @@ def write_ical_files(df: pd.DataFrame, outdir_ics: str, schedule_columns: Dict[s
         outpath_ics = os.path.join(outdir_ics, str(row[schedule_columns['id_column']]) + ".ics")
         with open(outpath_ics, 'w') as file:
             file.write(ics_content)
+
+
+def write_schedule_json(schedule_df: pd.DataFrame, schedule_columns: dict, output_file: str) -> None:
+    """
+    Create a JSON file from the schedule DataFrame.
+
+    Args:
+        schedule_df (pd.DataFrame): The schedule DataFrame.
+        schedule_columns (dict): Dictionary mapping column names for the schedule data.
+        output_file (str): The path to the output JSON file.
+    """
+    schedule_dict = {}
+
+    for _, row in schedule_df.iterrows():
+        workshop_id = row[schedule_columns['id_column']]
+        schedule_dict[workshop_id] = {
+            "date": row[schedule_columns['date_column']].strftime('%d.%m.%y'),
+            "room": row[schedule_columns['room_column']],
+            "main_instructor": row[schedule_columns['main_instructor_column']],
+            "helper": row[schedule_columns['helper_instructor_column']],
+            "title": row[schedule_columns['title_column']],
+            "max_attendance": row[schedule_columns['max_attendance']],
+            "timeslot": row[schedule_columns['start_time_column']] + '-' + row[schedule_columns['end_time_column']]
+        }
+
+    with open(output_file, 'w') as json_file:
+        json.dump(schedule_dict, json_file, indent=4)

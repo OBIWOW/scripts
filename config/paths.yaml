@@ -1,0 +1,19 @@
+input:
+  survey_results:
+    file_path: "inputs/submission.csv"
+    delimiter: ";"
+  schedule:
+    file_path: "inputs/schedule.csv"
+    delimiter: ","
+  footer:
+    file_path: "inputs/footer.html"
+output:
+  schedule_json:
+    file_path: "outputs/schedule.json"
+  html:
+    file_path: "outputs/workshop_content.html"
+  ics:
+    dir_path: "outputs/ical"
+footer: "footer.html"
+outfile: "workshop_content.html"
+outdir_ics: "ical"
