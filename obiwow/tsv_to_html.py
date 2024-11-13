@@ -11,7 +11,7 @@ from mako.template import Template
 
 """
 To do each year: update values for websites and nettskjema.
-See below just after 
+See below just after
 """
 
 
@@ -178,130 +178,6 @@ def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, y
     return schedule_table_rendered
 
 
-def html_list(raw_string):
-    line = "<ul>"
-    split_string = raw_string.split("- ")
-
-    for elm in split_string:
-        line += '<li>'
-        line += elm
-        line += '</li>'
-    line += '</ul>'
-
-    return line
-
-
-def html_list_outcome(raw_string):
-    if ' -' in raw_string:
-        split_string = raw_string.split(' -')
-
-        if split_string[0].strip().endswith(":"):
-            line = split_string[0].strip()
-            line += "<ul>"
-            split_string = split_string[1:]
-        else:
-            line = "<ul>"
-
-        for elm in split_string:
-            line += '<li>'
-            line += elm
-            line += '</li>'
-        line += '</ul>'
-
-        return line
-    elif "•" in raw_string:
-        split_string = raw_string.split('•')
-
-        if split_string[0].strip().endswith(":"):
-            line = split_string[0].strip()
-            line += "<ul>"
-            split_string = split_string[1:]
-        else:
-            line = "<ul>"
-
-        for elm in split_string:
-            if elm != '':
-                line += '<li>'
-                line += elm.strip()
-                line += '</li>'
-        line += '</ul>'
-        return line
-
-    else:
-        return raw_string
-
-
-def make_room_url(room_name, dict_room_info):
-    # print()
-    try:
-        room_link = '<a rel="noreferrer noopener" target="_blank" href="'
-        room_link += dict_room_info[room_name]['url']
-        room_link += '">'
-        room_link += dict_room_info[room_name]['name']
-        room_link += '</a>'
-    except KeyError:
-        room_link = room_name
-    return room_link
-
-
-def nb_concurrent_workshop(dict_date_schedule):
-    count_conc_work = max([len(dict_date_schedule['morning']),
-                           len(dict_date_schedule['afternoon'])]) + len(dict_date_schedule['whole_day'])
-
-    return count_conc_work
-
-
-def make_ics(date, timeslot, location, location_link, event_name, title):
-    whole_day = False
-    split_timeslot = timeslot.split(" ")
-    if len(split_timeslot) > 1:
-        whole_day = True
-
-    start_time = timeslot.split("-")[0]
-    end_time = timeslot.split("-")[-1]
-
-    datetime_start = datetime.strptime(date + '-' + start_time, '%d.%m.%y-%H:%M')
-    datetime_end = datetime.strptime(date + '-' + end_time, '%d.%m.%y-%H:%M')
-
-    ical_start = datetime_start.strftime("%Y%m%d") + "T" + datetime_start.strftime("%H%M%S")
-    ical_end = datetime_start.strftime("%Y%m%d") + "T" + datetime_end.strftime("%H%M%S")
-
-    ics_header = "BEGIN:VCALENDAR\n\
-VERSION:2.0\n\
-PRODID:-//Python 3.10.2//icalendar-5.0.2\n\
-CALSCALE:GREGORIAN\n\
-BEGIN:VTIMEZONE\n\
-TZID:Europe/Oslo\n\
-X-LIC-LOCATION:Europe/Oslo\n\
-BEGIN:DAYLIGHT\n\
-TZNAME:CEST\n\
-TZOFFSETFROM:+0100\n\
-TZOFFSETTO:+0200\n\
-DTSTART:19700329T020000\n\
-RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU\n\
-END:DAYLIGHT\n\
-BEGIN:STANDARD\n\
-TZNAME:CET\n\
-TZOFFSETFROM:+0200\n\
-TZOFFSETTO:+0100\n\
-DTSTART:19701025T030000\n\
-RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU\n\
-END:STANDARD\n\
-END:VTIMEZONE\n\
-BEGIN:VEVENT\n"
-    ics_header += "DTSTART;TZID=Europe/Oslo:" + ical_start + "\n"
-    ics_header += "DTEND;TZID=Europe/Oslo:" + ical_end + "\n"
-    ics_header += "SUMMARY:" + event_name + ":\\n" + title + "\n"
-    ics_header += "DESCRIPTION:"
-    if whole_day:
-        ics_header += "Break from 12:00 to 13:00\\n\\n"
-    ics_header += "How to get to the room:\\n" + location_link + "\n"
-    ics_header += "LOCATION:" + location + "\n"
-    ics_header += "END:VEVENT\n\
-END:VCALENDAR"
-
-    return ics_header
-
 
 def read_schedule(schedule_file, delimiter, config):
     """
@@ -381,6 +257,3 @@ def read_schedule(schedule_file, delimiter, config):
                 dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '13:00-16:00'
 
     return dict_schedule_final, dict_id_timeslot, dict_title_wsids, networking_event_id
-
-
-
