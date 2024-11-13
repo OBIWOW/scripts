@@ -1,6 +1,8 @@
 import csv
+import os
 import re
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 from mako.template import Template
@@ -98,7 +100,10 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
     """
 
     list_html_section = []
-    workshop_body_template = Template(filename='template/workshop_body_template.html')
+
+    project_root = Path(__file__).resolve().parent.parent
+    template_path = os.path.join(project_root, 'template', 'workshop_body_template.html')
+    workshop_body_template = Template(filename=template_path)
 
     for index, row in submission_schedule_df.iterrows():
 
@@ -161,7 +166,11 @@ def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, y
     # Sort the DataFrame by the 'Date' column
     df_schedule = schedule_df.sort_values(by='Date')
 
-    schedule_table_template = Template(filename='template/schedule_table_template.html')
+    project_root = Path(__file__).resolve().parent.parent
+    template_path = os.path.join(project_root, 'template', 'schedule_table_template.html')
+
+
+    schedule_table_template = Template(filename=template_path)
     schedule_table_rendered = schedule_table_template.render(
         df_schedule=schedule_df,
         schedule_columns=schedule_columns,
