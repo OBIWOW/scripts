@@ -1,15 +1,5 @@
-import sys
-
-import pandas as pd
-import json
-from pathlib import Path
-import os
-
-from pprint import pprint
-
-from data_reader_parser import merge_submission_schedule, add_start_end_time_to_schedule, annotate_networking_event, \
+from obiwow.data_reader_parser import parse_yaml, parse_csv_to_pandas, merge_submission_schedule, add_start_end_time_to_schedule, annotate_networking_event, \
     write_ical_files
-from obiwow.data_reader_parser import parse_yaml, parse_csv_to_pandas
 from obiwow.tsv_to_html import generate_workshop_body, generate_schedule_table
 
 
@@ -32,8 +22,6 @@ def import_all_config():
 def generate_html():
     config = import_all_config()
 
-    print(config)
-
     registration_open = config['yearly'].get('registration_open', False)
     paths = config['paths']
     yearly = config['yearly']
@@ -53,26 +41,21 @@ def generate_html():
                                                              schedule_columns)
 
     list_workshop_body = generate_workshop_body(df_merge_submission_schedule,
-                                  nettskjema_columns,
-                                  schedule_columns,
-                                  yearly,
-                                  rooms)
-
-
-    # print full dataframes
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(df_merge_submission_schedule)
-    # write pandas dataframes to csv
-    df_merge_submission_schedule.to_csv('df_merge_submission_schedule.csv')
-    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    #     print(df_schedule)
+                                                nettskjema_columns,
+                                                schedule_columns,
+                                                yearly,
+                                                rooms)
 
     # Create Schedule table
     string_schedule_table = generate_schedule_table(df_schedule, schedule_columns, yearly)
 
     # Write html
     with open(paths['output']['html']['file_path'], 'w') as file:
+        file.write('<h2>Agenda</h2>')
         file.write(string_schedule_table)
+        # Write content of footer file
+        with open(paths['input']['footer']['file_path'], 'r') as footer_file:
+            file.write(footer_file.read())
         file.write("\n".join(list_workshop_body))
 
     write_ical_files(df_merge_submission_schedule,
@@ -81,13 +64,10 @@ def generate_html():
                      rooms,
                      yearly)
 
-    #
-    # # write ical files
-    # write_ical(paths['outdir_ics'], dict_id_timeslot, yearly['event_name'])
-    #
-    # print("Success! Output files written to disk.")
-    # print(f"Use '{paths['outfile']}' as raw html for the workshop website.")
-    # print(f"Copy '*.ics' files in the '{paths['outdir_ics']}' folder so that they are in {yearly['ics_folder']}.")
+    print("Success! Output files written to disk.")
+    print(f"Use '{paths['output']['html']['file_path']}' as raw html for the workshop website.")
+    print(
+        f"Copy '*.ics' files in the '{paths['output']['ics']['dir_path']}' folder so that they are in {yearly['ics_folder']}.")
 
 
 if __name__ == "__main__":
