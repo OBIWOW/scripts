@@ -6,3 +6,5 @@ ical/
 *.txt
 *.json
 *.html
+.idea
+config/yearly_config.yaml

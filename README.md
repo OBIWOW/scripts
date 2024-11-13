@@ -15,7 +15,7 @@ All changing variables are defined in the configuration files in the `config` fo
 * `paths.yaml` --> Paths to input files and output files. Delimiter can be set here.
 * `rooms.yaml `--> Room names and MazeMap links
 * `schedule_columns.yaml` --> Column names in the schedule export.
-* `yearly_config.yaml` --> Variables that change each year, like the name of the events, the registration links, etc.
+* `yearly_config.yaml` --> Variables that change each year, like the name of the events, the registration links, etc. This file should not be commited to the repository as it can contain sensitive information. Only the yearly_config.yaml.EXAMPLE should be commited.
 
 Except for `rooms.yaml`, you must not change the name the keys in the configuration files, only the values.
 
@@ -40,17 +40,22 @@ Example nettskjema: [2023 call for proposals](https://nettskjema.no/user/form/35
 ### Step-by-step
 
 1. Go to the "Call for Workshop Proposals" Nettskjema. Click on "Se resultater." Under "Last ned svar", click "Last ned kommaseparert fil (.txt)"
-2. Change the path to the downloaded file in the `paths.yaml` file (survey_results['file_path'] key). Delimiter can be set here.
-3. To create the `submission_title.csv` file, run:
+2. Copy the example yearly configuration file
 
+```shell
+cp config/yearly_config.yaml.EXAMPLE config/yearly_config.yaml
 ```
+3. Change the path to the downloaded file in the `paths.yaml` file (survey_results['file_path'] key). Delimiter can be set here.
+4. To create the `submission_title.csv` file, run:
+
+```shell
 cut -d\; -f1,6 < survey_results.csv > submission_title.csv
 ```
 
-4. If necessary, modify the `submission_title.csv` to remove any workshops that have withdrawn.
-5. Go to the "Schedule" Google Sheet. Click on File > Download > Tab Separated Values (.tsv) and download a tsv of the spreadsheet.
-6. Change the path to the downloaded file in the `paths.yaml` file (schedule['file_path'] key). Delimiter can be set here.
-7. Run `python generate_website.py`
+5. If necessary, modify the `submission_title.csv` to remove any workshops that have withdrawn.
+6. Go to the "Schedule" Google Sheet. Click on File > Download > Tab Separated Values (.tsv) and download a tsv of the spreadsheet.
+7. Change the path to the downloaded file in the `paths.yaml` file (schedule['file_path'] key). Delimiter can be set here.
+8. Run `python generate_website.py`
 
 ## Checking registrations
 
