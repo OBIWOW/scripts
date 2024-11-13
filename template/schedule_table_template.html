@@ -47,21 +47,21 @@
                 % if i < len(all_day_workshops):
                     <td colspan="2">
                         <p style="margin-left:10px;">
-                            <a href="#${all_day_workshops.iloc[i][schedule_columns['id_column']]}">${all_day_workshops.iloc[i][schedule_columns['title_column']]}</a>
+                            <a href="#${str(all_day_workshops.iloc[i][schedule_columns['id_column']])}">${all_day_workshops.iloc[i][schedule_columns['title_column']]}</a>
                         </p>
                     </td>
                 % else:
                     <td>
                         % if (i - len(all_day_workshops)) < len(morning_workshops):
                             <p style="margin-left:10px;">
-                                <a href="#${morning_workshops.iloc[i - len(all_day_workshops)][schedule_columns['id_column']]}">${morning_workshops.iloc[i - len(all_day_workshops)][schedule_columns['title_column']]}</a>
+                                <a href="${'#' + str(morning_workshops.iloc[i - len(all_day_workshops)][schedule_columns['id_column']]) if not morning_workshops.iloc[i - len(all_day_workshops)][schedule_columns['networking_event_column']] else yearly['networking_event_url']}">${morning_workshops.iloc[i - len(all_day_workshops)][schedule_columns['title_column']]}</a>
                             </p>
                         % endif
                     </td>
                     <td>
                         % if (i - len(all_day_workshops)) < len(afternoon_workshops):
                             <p style="margin-left:10px;">
-                                <a href="#${afternoon_workshops.iloc[i - len(all_day_workshops)][schedule_columns['id_column']]}">${afternoon_workshops.iloc[i - len(all_day_workshops)][schedule_columns['title_column']]}</a>
+                                <a href="${'#' + str(afternoon_workshops.iloc[i - len(all_day_workshops)][schedule_columns['id_column']]) if not afternoon_workshops.iloc[i - len(all_day_workshops)][schedule_columns['networking_event_column']] else network_url}">${afternoon_workshops.iloc[i - len(all_day_workshops)][schedule_columns['title_column']]}</a>
                             </p>
                         % endif
                     </td>

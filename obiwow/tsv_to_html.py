@@ -109,18 +109,25 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
     """
 
     list_html_section = []
+    workshop_body_template = Template(filename='template/workshop_body_template.html')
 
     for index, row in submission_schedule_df.iterrows():
+
+        networking_event = row[schedule_columns['networking_event_column']]
+        # Pass if networking event
+        if networking_event:
+            continue
+
         # Preparing data for workshop body
         workshop_id = row[nettskjema_columns['id_column']]
-        workshop_number =  row[schedule_columns['id_column']]
+        workshop_number = row[schedule_columns['id_column']]
         workshop_title = row[nettskjema_columns['title_column']].strip()
         workshop_date = datetime.strptime(row[schedule_columns['date_column']], '%d.%m.%y').strftime(
                 "%A %d %B %Y")
         workshop_time = row[schedule_columns['start_time_column']] + '-' + row[schedule_columns['end_time_column']]
         if workshop_time == '9:00-16:00':
             workshop_time = '9:00-12:00 13:00-16:00'
-        workshop_ics_path = yearly['ics_folder'] + str(workshop_id) + '.ics'
+        workshop_ics_path = yearly['ics_folder'] + str(workshop_number) + '.ics'
         room_name, room_url = room_info(row, rooms, schedule_columns)
         workshop_description = row[nettskjema_columns['description_column']]
         list_learning_outcome, bool_header_outcome = make_list(row[nettskjema_columns['outcome_column']])
@@ -135,7 +142,6 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
 
 
         # Using Mako template to render the workshop body
-        workshop_body_template = Template(filename='template/workshop_body_template.html')
         workshop_body_rendered = workshop_body_template.render(
             workshop_number=workshop_number,
             workshop_title=workshop_title,
@@ -159,7 +165,7 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
 
     return list_html_section
 
-def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict):
+def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, yearly: dict) -> str:
     list_html_section = []
     # Convert 'Date' column to datetime objects
     schedule_df['Date'] = pd.to_datetime(schedule_df['Date'], format='%d.%m.%y')
@@ -170,7 +176,8 @@ def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict):
     schedule_table_template = Template(filename='template/schedule_table_template.html')
     schedule_table_rendered = schedule_table_template.render(
         df_schedule=schedule_df,
-        schedule_columns=schedule_columns
+        schedule_columns=schedule_columns,
+        network_url=yearly['networking_event_url'],
     )
     return schedule_table_rendered
 
