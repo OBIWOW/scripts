@@ -25,7 +25,8 @@ def add_duration_to_time(start_time_str: str, duration_str: str) -> str:
         start_time = datetime.strptime(start_time_str, '%H:%M')
         duration_match = re.match(r'(\d+)\s*(min|hours?)', duration_str)
         if not duration_match:
-            raise ValueError(f'Invalid duration format: {duration_str}. Expected format: <number> min|hours in schedule file')
+            raise ValueError(
+                f'Invalid duration format: {duration_str}. Expected format: <number> min|hours in schedule file')
 
         duration_value = int(duration_match.group(1))
         duration_unit = duration_match.group(2)
@@ -46,6 +47,7 @@ def add_duration_to_time(start_time_str: str, duration_str: str) -> str:
         elif start_time_str == '13:00':
             return '16:00'
         return start_time_str
+
 
 def get_start_end_time(data: pd.Series, schedule_columns: Dict[str, str]) -> Tuple[str, str]:
     """
@@ -235,7 +237,10 @@ def generate_ical_content(row: pd.Series, schedule_columns: Dict[str, str], room
         room_url = rooms[room_name]['url'] if room_name in rooms else None
         event_name = yearly['event_name']
 
-        ics_template = Template(filename='template/invite.ics')
+        project_root = Path(__file__).resolve().parent.parent
+        template_path = os.path.join(project_root, 'template', 'invite.ics')
+
+        ics_template = Template(filename=template_path)
         ics_content = ics_template.render(ical_start=ical_start,
                                           ical_end=ical_end,
                                           workshop_title=workshop_title,
