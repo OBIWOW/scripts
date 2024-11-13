@@ -46,11 +46,15 @@
 <h3>Pre-requisites</h3>
 <p>
     <ul>
-        % if workshop_learning_outcomes_header:
+        % if workshop_pre_requisites_header:
             ${workshop_pre_requisites[0]}
-        % for pre_req in workshop_pre_requisites[1:]:
-            <li>${pre_req}</li>
-        % endfor
+            % for pre_req in workshop_pre_requisites[1:]:
+                <li>${pre_req}</li>
+            % endfor
+        % else:
+            % for pre_req in workshop_pre_requisites:
+                <li>${pre_req}</li>
+            % endfor
         % endif
     </ul>
 </p>

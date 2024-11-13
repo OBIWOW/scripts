@@ -141,6 +141,7 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
             workshop_learning_outcomes_header=bool_header_outcome,
             workshop_target_audience=workshop_target_audience,
             workshop_pre_requisites=list_pre_requisite,
+            workshop_pre_requisites_header=bool_header_pre_req,
             workshop_material=workshop_material,
             workshop_main_instructor=workshop_main_instructor,
             workshop_helper_instructor=workshop_helper_instructor,
