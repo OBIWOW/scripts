@@ -68,7 +68,7 @@ def generate_html() -> None:
     print("Success! Output files written to disk.")
     print(f"Use '{paths['output']['html']['file_path']}' as raw html for the workshop website.")
     print(
-        f"Copy '*.ics' files in the '{paths['output']['ics']['dir_path']}' folder so that they are in {yearly['ics_folder']}.")
+        f"Copy '*.ics' files in the '{paths['output']['ics']['dir_path']}' folder so that they are in {paths['output']['ics']['dir_path']}.")
 
 
 if __name__ == "__main__":

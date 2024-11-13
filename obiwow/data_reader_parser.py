@@ -24,7 +24,7 @@ def add_duration_to_time(start_time_str: str, duration_str: str) -> str:
     start_time = datetime.strptime(start_time_str, '%H:%M')
     duration_match = re.match(r'(\d+)\s*(min|hours?)', duration_str)
     if not duration_match:
-        print(f'Invalid duration format: {duration_str}, expected format: <number> <unit> (e.g., 2 hours, 30 min)')
+        print(f'Invalid duration format: {duration_str} in schedule input file, expected format: <number> <unit> (e.g., 2 hours, 30 min)')
         if start_time_str == '9:00':
             return '12:00'
         elif start_time_str == '13:00':
