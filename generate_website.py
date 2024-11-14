@@ -1,9 +1,9 @@
-from data_reader_parser import standardise_time_of_day_column
+from data_reader_parser import standardise_time_of_day_column, write_html_page
 from obiwow.data_reader_parser import (
     parse_yaml, parse_csv_to_pandas, merge_submission_schedule,
     add_start_end_time_to_schedule, annotate_networking_event, write_ical_files, write_schedule_json
 )
-from obiwow.tsv_to_html import generate_workshop_body, generate_schedule_table
+from obiwow.tsv_to_html import generate_workshop_body, generate_schedule_table, generate_full_html_page
 
 
 def import_all_config() -> dict:
@@ -58,12 +58,10 @@ def generate_html() -> None:
 
     string_schedule_table = generate_schedule_table(df_schedule, schedule_columns, yearly)
 
-    with open(paths['output']['html']['file_path'], 'w') as file:
-        file.write('<h2>Agenda</h2>')
-        file.write(string_schedule_table)
-        with open(paths['input']['footer']['file_path'], 'r') as footer_file:
-            file.write(footer_file.read())
-        file.write("\n".join(list_workshop_body))
+
+    string_full_page = generate_full_html_page(string_schedule_table, list_workshop_body, yearly)
+
+    write_html_page(string_full_page, paths)
 
     write_ical_files(df_merge_submission_schedule, paths['output']['ics']['dir_path'], schedule_columns, rooms, yearly)
 

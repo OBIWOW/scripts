@@ -169,7 +169,6 @@ def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, y
     project_root = Path(__file__).resolve().parent.parent
     template_path = os.path.join(project_root, 'template', 'schedule_table_template.html')
 
-
     schedule_table_template = Template(filename=template_path)
     schedule_table_rendered = schedule_table_template.render(
         df_schedule=schedule_df,
@@ -177,7 +176,6 @@ def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, y
         network_url=yearly['networking_event_url'],
     )
     return schedule_table_rendered
-
 
 
 def read_schedule(schedule_file, delimiter, config):
@@ -258,3 +256,39 @@ def read_schedule(schedule_file, delimiter, config):
                 dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '13:00-16:00'
 
     return dict_schedule_final, dict_id_timeslot, dict_title_wsids, networking_event_id
+
+
+def generate_full_html_page(schedule_table_html: str, workshop_body_html: list, yearly: dict) -> str:
+    """
+    Generate the full HTML page using the Mako template.
+
+    Args:
+        schedule_table_html (str): The HTML for the schedule table.
+        workshop_body_html (str): The HTML for the workshop body.
+        yearly (dict): Dictionary containing yearly configuration values.
+
+    Returns:
+        str: The full HTML page.
+    """
+    # Make footer
+    project_root = Path(__file__).resolve().parent.parent
+    header_template_path = os.path.join(project_root, 'template', 'header_template.html')
+    header_page_template = Template(filename=header_template_path)
+
+    header_page_rendered = header_page_template.render(
+        page_title=yearly['event_name'],
+    )
+
+    footer_template_path = os.path.join(project_root, 'template', 'footer_template.html')
+    footer_page_template = Template(filename=footer_template_path)
+    footer_page_rendered = footer_page_template.render()
+    full_page_rendered = ''
+    try:
+        full_page_rendered += header_page_rendered
+        full_page_rendered += schedule_table_html
+        full_page_rendered += "\n".join(workshop_body_html)
+        full_page_rendered += footer_page_rendered
+    except Exception as e:
+        print(e)
+
+    return full_page_rendered

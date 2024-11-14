@@ -1,87 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Workshop Template</title>
-    <style>
-        ul {
-          padding-left: 30px;
-        }
-    </style>
-</head>
-<body>
-    <hr class="double">
-    <div id="${workshop_number}">
-        <h2>${workshop_title}</h2>
-        <p>
-            <strong><u>Date</u>: ${workshop_date} ${workshop_time}</strong>
-            <a rel="noreferrer noopener" target="_blank" href="${workshop_ics_path}">Add to calendar</a>
-        </p>
-        <strong><u>Room</u>:</strong>
-        % if room_map_url:
-            <a rel="noreferrer noopener" target="_blank" href="${room_map_url}">${room_name}</a>
-        % else:
-            ${room_name}
-        % endif
-        <p>
-            % if registration_is_open:
-                <a  rel="noreferrer noopener" target="_blank" href="${register_link}">Register here</a>
-            % endif
-        </p>
-        <h4>Description</h4>
-        <p align="justify">
-            ${workshop_description}
-        </p>
-        <div style="background-color:#b6efed;width:90%;border-radius: 15px;padding: 10px;margin-left: auto;margin-right: auto;">
-            <p>
-                <h4>Learning outcomes</h4>
-                % if workshop_learning_outcomes_header:
-                    ${workshop_learning_outcomes[0]}
-                    <ul>
-                    % for learning_outcome in workshop_learning_outcomes[1:]:
-                        <li>${learning_outcome}</li>
-                    % endfor
-                    </ul>
-                % else:
-                    <ul>
-                    % for learning_outcome in workshop_learning_outcomes:
-                        <li>${learning_outcome}</li>
-                    % endfor
-                    </ul>
-                % endif
-            </p>
-            <br>
-        </div>
-        <h3>Target audience</h3>
-        <p>${workshop_target_audience}</p>
-    </div>
-    <h3>Pre-requisites</h3>
+<hr class="double">
+<div id="${workshop_number}">
+    <h2>${workshop_title}</h2>
     <p>
-            % if workshop_pre_requisites_header:
-                ${workshop_pre_requisites[0]}
+        <strong><u>Date</u>: ${workshop_date} ${workshop_time}</strong>
+        <a rel="noreferrer noopener" target="_blank" href="${workshop_ics_path}">Add to calendar</a>
+    </p>
+    <strong><u>Room</u>:</strong>
+    % if room_map_url:
+        <a rel="noreferrer noopener" target="_blank" href="${room_map_url}">${room_name}</a>
+    % else:
+        ${room_name}
+    % endif
+    <p>
+        % if registration_is_open:
+            <a  rel="noreferrer noopener" target="_blank" href="${register_link}">Register here</a>
+        % endif
+    </p>
+    <h4>Description</h4>
+    <p align="justify">
+        ${workshop_description}
+    </p>
+    <div style="background-color:#b6efed;width:90%;border-radius: 15px;padding: 10px;margin-left: auto;margin-right: auto;">
+        <p>
+            <h4>Learning outcomes</h4>
+            % if workshop_learning_outcomes_header:
+                ${workshop_learning_outcomes[0]}
                 <ul>
-                % for pre_req in workshop_pre_requisites[1:]:
-                    <li>${pre_req}</li>
+                % for learning_outcome in workshop_learning_outcomes[1:]:
+                    <li>${learning_outcome}</li>
                 % endfor
                 </ul>
             % else:
                 <ul>
-                % for pre_req in workshop_pre_requisites:
-                    <li>${pre_req}</li>
+                % for learning_outcome in workshop_learning_outcomes:
+                    <li>${learning_outcome}</li>
                 % endfor
                 </ul>
             % endif
-    </p>
-    <h3>Equipment to bring</h3>
-    <p>
-        ${workshop_material}
-    </p>
-    <p>
-        <strong>Instructor(s):<br></strong>${workshop_main_instructor} (main)<br>
-        % if workshop_helper_instructor != 'nan':
-            ${workshop_helper_instructor}
+        </p>
+        <br>
+    </div>
+    <h3>Target audience</h3>
+    <p>${workshop_target_audience}</p>
+</div>
+<h3>Pre-requisites</h3>
+<p>
+        % if workshop_pre_requisites_header:
+            ${workshop_pre_requisites[0]}
+            <ul>
+            % for pre_req in workshop_pre_requisites[1:]:
+                <li>${pre_req}</li>
+            % endfor
+            </ul>
+        % else:
+            <ul>
+            % for pre_req in workshop_pre_requisites:
+                <li>${pre_req}</li>
+            % endfor
+            </ul>
         % endif
-    </p>
-    <a href="#table_sched">Go back</a>
-</body>
-</html>
+</p>
+<h3>Equipment to bring</h3>
+<p>
+    ${workshop_material}
+</p>
+<p>
+    <strong>Instructor(s):<br></strong>${workshop_main_instructor} (main)<br>
+    % if workshop_helper_instructor != 'nan':
+        ${workshop_helper_instructor}
+    % endif
+</p>
+<a href="#table_sched">Go back</a>

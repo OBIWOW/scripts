@@ -311,6 +311,15 @@ def write_schedule_json(schedule_df: pd.DataFrame, schedule_columns: dict, outpu
 
 
 def standardise_time_of_day(time: str) -> str:
+    """
+    Standardise the time of day string.
+
+    Args:
+        time (str): The time of day string.
+
+    Returns:
+        str: The standardised time of day string.
+    """
     time_of_day_mapping = {
         'morning': ['morning', 'morgen'],
         'afternoon': ['afternoon', 'ettermiddag'],
@@ -325,8 +334,34 @@ def standardise_time_of_day(time: str) -> str:
 
 
 def standardise_time_of_day_column(df: pd.DataFrame, dict_columns: dict) -> pd.DataFrame:
+    """
+    Standardise the time of day column in the DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to standardise.
+        dict_columns (dict): The dictionary containing column names.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame
+    """
     if 'time_column' in dict_columns:
         df[dict_columns['time_column']] = df[dict_columns['time_column']].apply(standardise_time_of_day)
     if 'duration_column' in dict_columns:
         df[dict_columns['duration_column']] = df[dict_columns['duration_column']].apply(standardise_time_of_day)
     return df
+
+
+def write_html_page(full_page_html_rendered: str, paths: dict) -> None:
+    """
+    Write the full HTML page to disk.
+
+    Args:
+        full_page_html_rendered (str): The full HTML page as a string.
+        paths (dict): The dictionary containing all configuration data.
+    """
+
+    try:
+        with open(paths['output']['html']['file_path'], 'w') as file:
+            file.write(full_page_html_rendered)
+    except Exception as e:
+        print(f"Error in write_html_page: {e}")
