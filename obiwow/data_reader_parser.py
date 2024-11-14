@@ -365,3 +365,4 @@ def write_html_page(full_page_html_rendered: str, paths: dict) -> None:
             file.write(full_page_html_rendered)
     except Exception as e:
         print(f"Error in write_html_page: {e}")
+        raise e
