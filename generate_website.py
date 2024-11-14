@@ -1,3 +1,4 @@
+from data_reader_parser import standardise_time_of_day_column
 from obiwow.data_reader_parser import (
     parse_yaml, parse_csv_to_pandas, merge_submission_schedule,
     add_start_end_time_to_schedule, annotate_networking_event, write_ical_files, write_schedule_json
@@ -42,7 +43,10 @@ def generate_html() -> None:
 
     df_submissions = parse_csv_to_pandas(paths['input']['survey_results']['file_path'],
                                          paths['input']['survey_results']['delimiter'])
-    df_schedule = parse_csv_to_pandas(paths['input']['schedule']['file_path'], paths['input']['schedule']['delimiter'])
+    df_schedule = parse_csv_to_pandas(paths['input']['schedule']['file_path'],
+                                      paths['input']['schedule']['delimiter'])
+
+    standardise_time_of_day_column(df_schedule, schedule_columns)
     df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)
     df_schedule = annotate_networking_event(df_schedule, schedule_columns)
 

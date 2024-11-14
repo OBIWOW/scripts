@@ -183,7 +183,7 @@ def merge_submission_schedule(submission_df: pd.DataFrame, schedule_df: pd.DataF
         merged_df = pd.merge(submission_df, schedule_df,
                              left_on=nettskjema_columns['title_column'],
                              right_on=schedule_columns['title_column'],
-                             how='left')
+                             how='right')
         return merged_df
     except Exception as e:
         print(f"Error in merge_submission_schedule: {e}")
@@ -308,3 +308,25 @@ def write_schedule_json(schedule_df: pd.DataFrame, schedule_columns: dict, outpu
             json.dump(schedule_dict, json_file, indent=4)
     except Exception as e:
         print(f"Error in write_schedule_json: {e}")
+
+
+def standardise_time_of_day(time: str) -> str:
+    time_of_day_mapping = {
+        'morning': ['morning', 'morgen'],
+        'afternoon': ['afternoon', 'ettermiddag'],
+        'all day': ['all day', 'whole day', 'full day'],
+        'half a day': ['half a day', 'halv dag']
+    }
+
+    for time_of_day, time_of_day_synonyms in time_of_day_mapping.items():
+        if time in time_of_day_synonyms:
+            return time_of_day
+    return time
+
+
+def standardise_time_of_day_column(df: pd.DataFrame, dict_columns: dict) -> pd.DataFrame:
+    if 'time_column' in dict_columns:
+        df[dict_columns['time_column']] = df[dict_columns['time_column']].apply(standardise_time_of_day)
+    if 'duration_column' in dict_columns:
+        df[dict_columns['duration_column']] = df[dict_columns['duration_column']].apply(standardise_time_of_day)
+    return df
