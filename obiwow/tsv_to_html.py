@@ -46,41 +46,19 @@ def make_list(raw_string: str) -> tuple[list, bool]:
     """
     split_string = []
     bool_header = False
-    # Case if number. is in string in any position
-    if re.search(r'\d+\. ', raw_string):
-        # Split string before each number
-        split_string = re.split(r'(\d+\. )', raw_string)[1:]
-        # Only get the even index
-        split_string = split_string[1::2]
-        split_string = [elm.lstrip(".").strip() for elm in split_string]
-
-    # Case string have with bullet point in any position
-    elif re.search(r'•', raw_string):
-        split_string = raw_string.split('•')
-        # If there is a list header with :
-        if ":" in split_string[0] and not (raw_string[0].isdigit() or raw_string[0] == '•' or raw_string[0] == '-'):
-            split_string = [split_string[0].rsplit(': ', 1)[0] + ":"] + split_string[1:]
+    # Use a single regex pattern to match numbers, bullet points, or dashes
+    pattern = r'(\d+- |\d+\. |•|- |\*)'
+    if re.search(pattern, raw_string):
+        split_string = re.split(pattern, raw_string)
+        split_string = [elm.strip() for elm in split_string if not re.match(pattern, elm)]
+        # Check for header
+        if ":" in split_string[0] and not (raw_string[0].isdigit() or raw_string[0] in ['•', '-', '*']):
+            split_string = [split_string[0].rsplit(': ', 1)[0]] + split_string[1:]
             bool_header = True
-        else:
-            split_string = split_string[1:]
-        split_string = [elm.strip() for elm in split_string]
-
-
-    # Case string with dash in any position
-    elif re.search(r'- ', raw_string):
-        split_string = raw_string.split('- ')
-        # If there is a list header with :
-        if ":" in split_string[0] and not (raw_string[0].isdigit() or raw_string[0] == '•' or raw_string[0] == '-'):
-            split_string = [split_string[0].rsplit(': ', 1)[0] + ":"] + split_string[1:]
-            bool_header = True
-        else:
-            split_string = split_string[1:]
-        split_string = [elm.strip() for elm in split_string]
-
     else:
         return [raw_string], bool_header
 
-    return split_string, bool_header
+    return list(filter(None, split_string)), bool_header
 
 
 def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_columns: dict, schedule_columns,
