@@ -181,8 +181,8 @@ def merge_submission_schedule(submission_df: pd.DataFrame, schedule_df: pd.DataF
     """
     try:
         merged_df = pd.merge(submission_df, schedule_df,
-                             left_on=nettskjema_columns['title_column'],
-                             right_on=schedule_columns['title_column'],
+                             left_on=nettskjema_columns['id_column'],
+                             right_on=schedule_columns['nettskjema_id_column'],
                              how='right')
         return merged_df
     except Exception as e:
