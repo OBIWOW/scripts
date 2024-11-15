@@ -46,6 +46,9 @@ def generate_html() -> None:
     df_schedule = parse_csv_to_pandas(paths['input']['schedule']['file_path'],
                                       paths['input']['schedule']['delimiter'])
 
+    # Remove rows with cancelled workshops
+    df_schedule = df_schedule[df_schedule[schedule_columns['status_column']] != 'cancelled']
+
     standardise_time_of_day_column(df_schedule, schedule_columns)
     df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)
     df_schedule = annotate_networking_event(df_schedule, schedule_columns)
