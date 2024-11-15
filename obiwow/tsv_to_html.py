@@ -236,7 +236,7 @@ def read_schedule(schedule_file, delimiter, config):
     return dict_schedule_final, dict_id_timeslot, dict_title_wsids, networking_event_id
 
 
-def generate_full_html_page(schedule_table_html: str, workshop_body_html: list, yearly: dict) -> str:
+def generate_full_html_page(schedule_table_html: str, workshop_body_html: list, yearly: dict, paths: dict) -> str:
     """
     Generate the full HTML page using the Mako template.
 
@@ -257,6 +257,10 @@ def generate_full_html_page(schedule_table_html: str, workshop_body_html: list, 
         page_title=yearly['event_name'],
     )
 
+    path_schedule_footer = paths['input']['footer']['file_path']
+    with open(path_schedule_footer, 'r') as f:
+        footer_schedule_rendered = f.read()
+
     footer_template_path = os.path.join(project_root, 'template', 'footer_template.html')
     footer_page_template = Template(filename=footer_template_path)
     footer_page_rendered = footer_page_template.render()
@@ -264,6 +268,7 @@ def generate_full_html_page(schedule_table_html: str, workshop_body_html: list, 
     try:
         full_page_rendered += header_page_rendered
         full_page_rendered += schedule_table_html
+        full_page_rendered += footer_schedule_rendered
         full_page_rendered += "\n".join(workshop_body_html)
         full_page_rendered += footer_page_rendered
     except Exception as e:

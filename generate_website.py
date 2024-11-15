@@ -59,7 +59,7 @@ def generate_html() -> None:
     string_schedule_table = generate_schedule_table(df_schedule, schedule_columns, yearly)
 
 
-    string_full_page = generate_full_html_page(string_schedule_table, list_workshop_body, yearly)
+    string_full_page = generate_full_html_page(string_schedule_table, list_workshop_body, yearly, paths)
 
     write_html_page(string_full_page, paths)
 
