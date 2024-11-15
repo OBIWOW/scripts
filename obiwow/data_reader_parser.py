@@ -249,7 +249,7 @@ def generate_ical_content(row: pd.Series, schedule_columns: Dict[str, str], room
                                           event_name=event_name)
         return ics_content
     except Exception as e:
-        print(f"Error in generate_ical_content: {e}")
+        print(f"Error in generate_ical_content: {e} in '{row[schedule_columns['title_column']]}'")
         return ""
 
 
