@@ -9,7 +9,7 @@ import yaml
 import pandas as pd
 
 
-def add_duration_to_time(start_time_str: str, duration_str: str) -> str:
+def add_duration_to_time(start_time_str: str, duration_str: str, workshop_title: str) -> str:
     """
     Add a duration to a start time and return the end time.
 
@@ -26,7 +26,7 @@ def add_duration_to_time(start_time_str: str, duration_str: str) -> str:
         duration_match = re.match(r'(\d+)\s*(min|hours?)', duration_str)
         if not duration_match:
             raise ValueError(
-                f'Invalid duration format: {duration_str}. Expected format: <number> min|hours in schedule file')
+                f'Invalid duration format: {duration_str}. Expected format: <number> min|hours for "{workshop_title}"')
 
         duration_value = int(duration_match.group(1))
         duration_unit = duration_match.group(2)
@@ -75,7 +75,9 @@ def get_start_end_time(data: pd.Series, schedule_columns: Dict[str, str]) -> Tup
                 workshop_end_time = '12:00'
             else:
                 workshop_start_time = '9:00'
-                workshop_end_time = add_duration_to_time('9:00', str(data[schedule_columns['duration_column']]))
+                workshop_end_time = add_duration_to_time('9:00',
+                                                         str(data[schedule_columns['duration_column']]),
+                                                         data[schedule_columns['title_column']])
         elif data[schedule_columns['time_column']] == 'afternoon':
             if str(data[schedule_columns['duration_column']]) == 'nan':
                 workshop_start_time = '13:00'
@@ -85,7 +87,9 @@ def get_start_end_time(data: pd.Series, schedule_columns: Dict[str, str]) -> Tup
                 workshop_end_time = '16:00'
             else:
                 workshop_start_time = '13:00'
-                workshop_end_time = add_duration_to_time('13:00', str(data[schedule_columns['duration_column']]))
+                workshop_end_time = add_duration_to_time('13:00',
+                                                         str(data[schedule_columns['duration_column']]),
+                                                         data[schedule_columns['title_column']])
         return workshop_start_time, workshop_end_time
     except Exception as e:
         print(f"Error in get_start_end_time: {e}")

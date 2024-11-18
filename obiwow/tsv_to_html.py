@@ -142,7 +142,7 @@ def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, y
     schedule_df['Date'] = pd.to_datetime(schedule_df['Date'], format='%d.%m.%y')
 
     # Sort the DataFrame by the 'Date' column
-    df_schedule = schedule_df.sort_values(by='Date')
+    schedule_df = schedule_df.sort_values(by='Date')
 
     project_root = Path(__file__).resolve().parent.parent
     template_path = os.path.join(project_root, 'template', 'schedule_table_template.html')
@@ -155,85 +155,85 @@ def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, y
     )
     return schedule_table_rendered
 
-
-def read_schedule(schedule_file, delimiter, config):
-    """
-    Read schedule tsv and creates dicts
-    NOTE workshops should have a unique number in the 'Number' column
-    with a trailing 0 ('01', '02', ..., '10', '11', ...)
-    """
-    schedule_id_column = config['schedule_id_column']
-    schedule_title_column = config['schedule_title_column']
-    schedule_date_column = config['schedule_date_column']
-    schedule_room_column = config['schedule_room_column']
-    schedule_main_instructor_column = config['schedule_main_instructor_column']
-    schedule_helper_instructor_column = config['schedule_helper_instructor_column']
-    schedule_max_attendance = config['schedule_max_attendance']
-    schedule_time_column = config['schedule_time_column']
-
-    dict_id_name = {}
-    dict_schedule_final = {}
-    dict_id_timeslot = {}
-    dict_title_wsids = {}  # keys: workshop title; values: workshop internal ID
-
-    with open(schedule_file, newline='') as csvfile:
-        data = csv.DictReader(csvfile, delimiter=delimiter)
-        for row in data:
-            if row[schedule_id_column] not in dict_id_name:
-                dict_id_name[row[schedule_title_column]] = row[schedule_id_column]
-
-            date = row[schedule_date_column].strip()
-
-            dict_id_timeslot[row[schedule_id_column]] = {}
-            dict_id_timeslot[row[schedule_id_column]]['date'] = date.strip()
-            dict_id_timeslot[row[schedule_id_column]]['room'] = row[schedule_room_column]
-            dict_id_timeslot[row[schedule_id_column]]['main_instructor'] = row[schedule_main_instructor_column]
-            dict_id_timeslot[row[schedule_id_column]]['helper'] = row[schedule_helper_instructor_column]
-            dict_id_timeslot[row[schedule_id_column]]['title'] = row[schedule_title_column].strip()
-            dict_id_timeslot[row[schedule_id_column]]['max_attendance'] = int(row[schedule_max_attendance])
-
-            ws_title = row[schedule_title_column].strip()
-            ws_internal_id = row[schedule_id_column]
-            dict_title_wsids[ws_title] = ws_internal_id
-            # Obtain id of networking event
-            if ws_title.startswith("Networking event"):
-                networking_event_id = ws_internal_id
-            else:
-                networking_event_id = None
-
-            if date not in dict_schedule_final:
-                dict_schedule_final[date] = {}
-                dict_schedule_final[date]['morning'] = []
-                dict_schedule_final[date]['afternoon'] = []
-                dict_schedule_final[date]['whole_day'] = []
-
-            time = row[schedule_time_column]
-
-            if time == 'full day':
-                dict_schedule_final[date]['whole_day'].append(
-                    {'id': row[schedule_id_column],
-                     'title': row[schedule_title_column]
-                     }
-                )
-                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00 13:00-16:00'
-
-            elif time == 'morning':
-                dict_schedule_final[date]['morning'].append(
-                    {'id': row[schedule_id_column],
-                     'title': row[schedule_title_column]
-                     }
-                )
-                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00'
-
-            elif time == 'afternoon':
-                dict_schedule_final[date]['afternoon'].append(
-                    {'id': row[schedule_id_column],
-                     'title': row[schedule_title_column]
-                     }
-                )
-                dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '13:00-16:00'
-
-    return dict_schedule_final, dict_id_timeslot, dict_title_wsids, networking_event_id
+#
+# def read_schedule(schedule_file, delimiter, config):
+#     """
+#     Read schedule tsv and creates dicts
+#     NOTE workshops should have a unique number in the 'Number' column
+#     with a trailing 0 ('01', '02', ..., '10', '11', ...)
+#     """
+#     schedule_id_column = config['schedule_id_column']
+#     schedule_title_column = config['schedule_title_column']
+#     schedule_date_column = config['schedule_date_column']
+#     schedule_room_column = config['schedule_room_column']
+#     schedule_main_instructor_column = config['schedule_main_instructor_column']
+#     schedule_helper_instructor_column = config['schedule_helper_instructor_column']
+#     schedule_max_attendance = config['schedule_max_attendance']
+#     schedule_time_column = config['schedule_time_column']
+#
+#     dict_id_name = {}
+#     dict_schedule_final = {}
+#     dict_id_timeslot = {}
+#     dict_title_wsids = {}  # keys: workshop title; values: workshop internal ID
+#
+#     with open(schedule_file, newline='') as csvfile:
+#         data = csv.DictReader(csvfile, delimiter=delimiter)
+#         for row in data:
+#             if row[schedule_id_column] not in dict_id_name:
+#                 dict_id_name[row[schedule_title_column]] = row[schedule_id_column]
+#
+#             date = row[schedule_date_column].strip()
+#
+#             dict_id_timeslot[row[schedule_id_column]] = {}
+#             dict_id_timeslot[row[schedule_id_column]]['date'] = date.strip()
+#             dict_id_timeslot[row[schedule_id_column]]['room'] = row[schedule_room_column]
+#             dict_id_timeslot[row[schedule_id_column]]['main_instructor'] = row[schedule_main_instructor_column]
+#             dict_id_timeslot[row[schedule_id_column]]['helper'] = row[schedule_helper_instructor_column]
+#             dict_id_timeslot[row[schedule_id_column]]['title'] = row[schedule_title_column].strip()
+#             dict_id_timeslot[row[schedule_id_column]]['max_attendance'] = int(row[schedule_max_attendance])
+#
+#             ws_title = row[schedule_title_column].strip()
+#             ws_internal_id = row[schedule_id_column]
+#             dict_title_wsids[ws_title] = ws_internal_id
+#             # Obtain id of networking event
+#             if ws_title.startswith("Networking event"):
+#                 networking_event_id = ws_internal_id
+#             else:
+#                 networking_event_id = None
+#
+#             if date not in dict_schedule_final:
+#                 dict_schedule_final[date] = {}
+#                 dict_schedule_final[date]['morning'] = []
+#                 dict_schedule_final[date]['afternoon'] = []
+#                 dict_schedule_final[date]['whole_day'] = []
+#
+#             time = row[schedule_time_column]
+#
+#             if time == 'full day':
+#                 dict_schedule_final[date]['whole_day'].append(
+#                     {'id': row[schedule_id_column],
+#                      'title': row[schedule_title_column]
+#                      }
+#                 )
+#                 dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00 13:00-16:00'
+#
+#             elif time == 'morning':
+#                 dict_schedule_final[date]['morning'].append(
+#                     {'id': row[schedule_id_column],
+#                      'title': row[schedule_title_column]
+#                      }
+#                 )
+#                 dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '9:00-12:00'
+#
+#             elif time == 'afternoon':
+#                 dict_schedule_final[date]['afternoon'].append(
+#                     {'id': row[schedule_id_column],
+#                      'title': row[schedule_title_column]
+#                      }
+#                 )
+#                 dict_id_timeslot[row[schedule_id_column]]['timeslot'] = '13:00-16:00'
+#
+#     return dict_schedule_final, dict_id_timeslot, dict_title_wsids, networking_event_id
 
 
 def generate_full_html_page(schedule_table_html: str, workshop_body_html: list, yearly: dict, paths: dict) -> str:
