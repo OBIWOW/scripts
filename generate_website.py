@@ -1,4 +1,4 @@
-from data_reader_parser import standardise_time_of_day_column, write_html_page
+from obiwow.data_reader_parser import standardise_time_of_day_column, write_html_page
 from obiwow.data_reader_parser import (
     parse_yaml, parse_csv_to_pandas, merge_submission_schedule,
     add_start_end_time_to_schedule, annotate_networking_event, write_ical_files, write_schedule_json

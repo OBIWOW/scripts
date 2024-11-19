@@ -98,7 +98,7 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
         workshop_time = row[schedule_columns['start_time_column']] + '-' + row[schedule_columns['end_time_column']]
         if workshop_time == '9:00-16:00':
             workshop_time = '9:00-12:00 13:00-16:00'
-        workshop_ics_path = yearly['ics_folder'] + str(workshop_number) + '.ics'
+        workshop_ics_path = yearly['ics_folder'] + str(f"{workshop_number:02d}") + '.ics'
         room_name, room_url = room_info(row, rooms, schedule_columns)
         workshop_description = row[nettskjema_columns['description_column']]
         list_learning_outcome, bool_header_outcome = make_list(row[nettskjema_columns['outcome_column']])

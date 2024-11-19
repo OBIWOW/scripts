@@ -17,23 +17,20 @@ All changing variables are defined in the configuration files in the `config` fo
 * `schedule_columns.yaml` --> Column names in the schedule export.
 * `yearly_config.yaml` --> Variables that change each year, like the name of the events, the registration links, etc. This file should not be commited to the repository as it can contain sensitive information. Only the yearly_config.yaml.EXAMPLE should be commited.
 
-Except for `rooms.yaml`, you must not change the name the keys in the configuration files, only the values.
+Except for `rooms.yaml`, you must not change the keys in the configuration files, only the values.
 
 For the `rooms.yaml` file, you can add or remove rooms, but the structure must be the same.
 
 ### Files needed and generated
 
 Input:
-* `survey_results` --> Exported files of the nettskjema with the proposals 
-* `submission_title.csv`--> two column csv file with only nettskjema submission ID
-   and workshop Title (Not used in the script, but useful for manual checks)
-  * Sometimes folks resubmit their proposal, or proposals get withdrawn.
-* `schedule` --> Export values of the schedule Google Sheet
+* `submission.csv` --> Exported files of the nettskjema with the proposals 
+* `schedule.csv` --> Export values of the schedule Google Sheet
 * `footer.html` --> Footer display at the bottom of the schedule table
 
 Output:
-* `html` --> HTML file for adding to the website
-* `schedule_json` --> JSON file with schedule
+* `workshop_content.html` --> HTML file for adding to the website
+* `schedule_.son` --> JSON file with schedule
 * Folder `ical` with calendar files to be added to Vortex
 
 Example nettskjema: [2023 call for proposals](https://nettskjema.no/user/form/355618/view)
@@ -47,14 +44,7 @@ Example nettskjema: [2023 call for proposals](https://nettskjema.no/user/form/35
 cp config/yearly_config.yaml.EXAMPLE config/yearly_config.yaml
 ```
 3. Change the path to the downloaded file in the `paths.yaml` file (survey_results['file_path'] key). Delimiter can be set here.
-4. To create the `submission_title.csv` file, run:
-
-```shell
-cut -d\; -f1,6 < survey_results.csv > submission_title.csv
-```
-
-5. If necessary, modify the `submission_title.csv` to remove any workshops that have withdrawn.
-6. Go to the "Schedule" Google Sheet. Click on File > Download > Tab Separated Values (.tsv) and download a tsv of the spreadsheet.
+6. Go to the "Schedule" Google Sheet. Click on File > Download > Comma Separated Values (.csv) and download a csv of the spreadsheet.
 7. Change the path to the downloaded file in the `paths.yaml` file (schedule['file_path'] key). Delimiter can be set here.
 8. Run `python generate_website.py`
 
