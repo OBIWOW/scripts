@@ -267,8 +267,8 @@ def generate_full_html_page(schedule_table_html: str, workshop_body_html: list, 
     full_page_rendered = ''
     try:
         full_page_rendered += header_page_rendered
-        full_page_rendered += schedule_table_html
         full_page_rendered += footer_schedule_rendered
+        full_page_rendered += schedule_table_html
         full_page_rendered += "\n".join(workshop_body_html)
         full_page_rendered += footer_page_rendered
     except Exception as e:
