@@ -1,6 +1,12 @@
+<!-- 
+# NOTE: 
+Each year, adjust content of `topics` dictionary so that it matches the columns in `evaluation_results.csv` 
+-->
+
 
 ```{python}
 import pandas as pd
+import numpy as np
 from matplotlib import pyplot as plt
 plt.style.use('ggplot')
 from IPython.display import display, Markdown
@@ -35,26 +41,46 @@ def make_plot(this_topic, this_question, these_question_responses):
     # case: background
     if this_topic == 'background':
         r = these_question_responses.to_dict()
-        plt.barh(list(r.keys()), list(r.values()))
+        x_values = list(r.keys())
+        y_values = list(r.values())
+        # Increase horizontal size when many backgrounds
+        if len(x_values) > 10:
+            plt.figure(figsize=(6.4, 6))
+        plt.barh(x_values, y_values)
+        # Ticks as integers
+        plt.xticks(ticks=np.arange(0, max(y_values) + 1, 1))
+        plt.xlabel('Count')
+        plt.ylabel('Responses')
     # case: scale from 1-5"
     elif this_topic in ['useful', 'lectures', 'practicals', 'overall']:
         r = {1:0, 2:0, 3:0, 4:0, 5:0}
         for response in r.keys():
             if response in these_question_responses:
                 r[response] = these_question_responses[response]
-        plt.bar(list(r.keys()), list(r.values()))
+        x_values = list(r.keys())
+        y_values = list(r.values())
+        plt.bar(x_values, y_values)
+        # Scale step size for ticks
+        step = 1 if max(y_values) <= 10 else 5
+        # Ticks as integers
+        plt.yticks(ticks=np.arange(0, max(y_values) + 1, step))
+        plt.xlabel('Response')
+        plt.ylabel('Count')
     # case: Yes/No
     else:
         r = {"No": 0, "Yes":0}
         for response in r.keys():
             if response in these_question_responses:
                 r[response] = int(these_question_responses[response])
-        plt.bar(list(r.keys()), list(r.values()))
-    
-    
-    #plt.title(this_question)
-    plt.xlabel('Response')
-    plt.ylabel('Count')
+        x_values = list(r.keys())
+        y_values = list(r.values())
+        plt.bar(x_values, y_values)
+        # Scale step size for ticks
+        step = 1 if max(y_values) <= 10 else 5
+        # Ticks as integers
+        plt.yticks(ticks=np.arange(0, max(y_values) + 1, step))
+        plt.xlabel('Response')
+        plt.ylabel('Count')
     plt.show()
 
 def run(all_responses, this_workshop, this_topic, topics):
@@ -73,17 +99,17 @@ def run(all_responses, this_workshop, this_topic, topics):
 # define topics and comments
 topics = {
 'background' : ['What is your main background?', ''],
-'useful' : ['Did you find the workshop useful?', 'Unnamed: 4'],
+'useful' : ['Did you find the workshop useful?', 'Kolonne 4'],
 'lectures': ['How would you rate the level of the lectures?',
- 'Unnamed: 6'],
+ 'Kolonne 6'],
 'practicals': ['How would you rate the practical sessions? ',
- 'Unnamed: 8'],
+ 'Kolonne 8'],
 'combination': ['Was this a useful combination of skills to learn in this manner?',
- 'Unnamed: 10'],
+ 'Kolonne 10'],
 'overall': ['What is your overall impression of the workshop?',
- 'Unnamed: 12'],
+ 'Kolonne 12'],
 'recommend': ['Would you recommend this workshop to your colleagues? ',
- 'Unnamed: 14'],
+ 'Kolonne 14'],
 'further_comments': ['', 'Do you have further comments or suggestions?']
 }
 # other topics
