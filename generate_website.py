@@ -34,7 +34,7 @@ def generate_html() -> None:
     """
     config = import_all_config()
 
-    registration_open = config['yearly'].get('registration_open', False)
+    # registration_open = config['yearly'].get('registration_open', False)
     paths = config['paths']
     yearly = config['yearly']
     nettskjema_columns = config['nettskjema_columns']
@@ -47,7 +47,7 @@ def generate_html() -> None:
                                       paths['input']['schedule']['delimiter'])
 
     # Remove rows with cancelled workshops
-    df_schedule = df_schedule[df_schedule[schedule_columns['status_column']] != 'cancelled']
+    #df_schedule = df_schedule[df_schedule[schedule_columns['status_column']] != 'cancelled']
 
     standardise_time_of_day_column(df_schedule, schedule_columns)
     df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)

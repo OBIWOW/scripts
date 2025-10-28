@@ -4,6 +4,12 @@ Code for organising the annual Oslo Bioinformatics Workshop Week.
 
 Scripts have variables that need to be updated each year.
 
+## Setup python environment
+
+```
+conda env create --name obiwow --file requirements.txt
+```
+
 ## Generating the website for the workshop week
 
 Script: `generate_website.py`
