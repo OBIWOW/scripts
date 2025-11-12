@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 from mako.template import Template
@@ -61,6 +62,80 @@ def make_list(raw_string: str) -> tuple[list, bool]:
     return list(filter(None, split_string)), bool_header
 
 
+def get_clean_value(row: pd.Series, column_name: str, default: str = "") -> str:
+    """
+    Return a cleaned string value from a pandas Series for the given column name.
+
+    Args:
+        row (pd.Series): The current row being processed.
+        column_name (str): The column to retrieve.
+        default (str): Fallback value if the column is missing or NaN.
+
+    Returns:
+        str: The cleaned string value.
+    """
+    value = row.get(column_name, default)
+    if pd.isna(value) or value is None:
+        return default
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    if isinstance(value, str):
+        return value.strip()
+    return str(value).strip()
+
+
+def parse_workshop_date(date_str: str) -> Optional[datetime]:
+    """
+    Parse a workshop date string using multiple possible formats.
+
+    Args:
+        date_str (str): The date string to parse.
+
+    Returns:
+        Optional[datetime]: Parsed datetime object if successful, otherwise None.
+    """
+    normalized = str(date_str).strip()
+    if not normalized:
+        return None
+
+    candidate_values: list[str] = []
+    for separator in (' to ', '-', '–', '—'):
+        if separator in normalized:
+            candidate = normalized.split(separator, 1)[0].strip()
+            if candidate:
+                candidate_values.append(candidate)
+    candidate_values.append(normalized)
+
+    seen: set[str] = set()
+    date_formats = (
+        '%d.%m.%y',
+        '%d.%m.%Y',
+        '%d/%m/%Y',
+        '%m/%d/%Y',
+        '%Y-%m-%d',
+    )
+
+    for candidate in candidate_values:
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+
+        for date_format in date_formats:
+            try:
+                return datetime.strptime(candidate, date_format)
+            except ValueError:
+                continue
+
+        try:
+            parsed = pd.to_datetime(candidate, dayfirst=True, errors='raise')
+            return parsed.to_pydatetime()
+        except Exception:
+            continue
+
+    print(f"WARNING: Unable to parse workshop date '{date_str}'. Using raw value.")
+    return None
+
+
 def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_columns: dict, schedule_columns,
                            yearly: dict, rooms: dict) -> list:
     """
@@ -91,24 +166,45 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
             continue
 
         # Preparing data for workshop body
-        workshop_number = row[schedule_columns['id_column']]
-        workshop_title = row[nettskjema_columns['title_column']].strip()
-        workshop_date = datetime.strptime(row[schedule_columns['date_column']], '%d.%m.%y').strftime(
-            "%A %d %B %Y")
-        workshop_time = row[schedule_columns['start_time_column']] + '-' + row[schedule_columns['end_time_column']]
+        workshop_number = get_clean_value(row, schedule_columns['id_column'], default=str(index + 1))
+        schedule_title = get_clean_value(row, schedule_columns['title_column'],
+                                         default=f"Workshop {workshop_number}")
+        workshop_title = get_clean_value(row, nettskjema_columns['title_column'],
+                                         default=schedule_title or f"Workshop {workshop_number}")
+        workshop_date_str = get_clean_value(row, schedule_columns['date_column'])
+        parsed_date = parse_workshop_date(workshop_date_str)
+        if parsed_date:
+            workshop_date = parsed_date.strftime("%A %d %B %Y")
+        else:
+            workshop_date = workshop_date_str
+        start_time = get_clean_value(row, schedule_columns['start_time_column'])
+        end_time = get_clean_value(row, schedule_columns['end_time_column'])
+        if start_time and end_time:
+            workshop_time = f"{start_time}-{end_time}"
+        else:
+            workshop_time = start_time or end_time or ""
         if workshop_time == '9:00-16:00':
             workshop_time = '9:00-12:00 13:00-16:00'
         workshop_ics_path = yearly['ics_folder'] + str(workshop_number) + '.ics'
         room_name, room_url = room_info(row, rooms, schedule_columns)
-        workshop_description = row[nettskjema_columns['description_column']]
-        list_learning_outcome, bool_header_outcome = make_list(row[nettskjema_columns['outcome_column']])
-        workshop_target_audience = row[nettskjema_columns['target_column']]
-        list_pre_requisite, bool_header_pre_req = make_list(row[nettskjema_columns['pre_requisite_column']])
-        workshop_material = row[nettskjema_columns['material_column']]
-        workshop_main_instructor = row[schedule_columns['main_instructor_column']]
-        workshop_helper_instructor = str(row[schedule_columns['helper_instructor_column']])
+        workshop_description = get_clean_value(row, nettskjema_columns['description_column'])
+        outcome_value = get_clean_value(row, nettskjema_columns['outcome_column'])
+        if outcome_value:
+            list_learning_outcome, bool_header_outcome = make_list(outcome_value)
+        else:
+            list_learning_outcome, bool_header_outcome = [], False
+        workshop_target_audience = get_clean_value(row, nettskjema_columns['target_column'])
+        pre_req_value = get_clean_value(row, nettskjema_columns['pre_requisite_column'])
+        if pre_req_value:
+            list_pre_requisite, bool_header_pre_req = make_list(pre_req_value)
+        else:
+            list_pre_requisite, bool_header_pre_req = [], False
+        workshop_material = get_clean_value(row, nettskjema_columns['material_column'])
+        workshop_main_instructor = get_clean_value(row, schedule_columns['main_instructor_column'])
+        workshop_helper_instructor = get_clean_value(row, schedule_columns['helper_instructor_column'])
         registration_is_open = yearly['registration_open']
-        register_link = yearly['pre_register_link'] + workshop_title.replace(" ", "_") + yearly['post_register_link']
+        register_title_slug = (workshop_title or schedule_title or f"workshop_{workshop_number}").replace(" ", "_")
+        register_link = yearly['pre_register_link'] + register_title_slug + yearly['post_register_link']
 
         # Using Mako template to render the workshop body
         workshop_body_rendered = workshop_body_template.render(
@@ -137,19 +233,27 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
 
 
 def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, yearly: dict) -> str:
-    list_html_section = []
-    # Convert 'Date' column to datetime objects
-    schedule_df['Date'] = pd.to_datetime(schedule_df['Date'], format='%d.%m.%y')
+    schedule_df = schedule_df.copy()
 
-    # Sort the DataFrame by the 'Date' column
-    schedule_df = schedule_df.sort_values(by='Date')
+    def _safe_parse(value) -> datetime:
+        if pd.isna(value) or value is None:
+            return datetime.max
+        parsed = parse_workshop_date(str(value))
+        return parsed if parsed else datetime.max
+
+    sorted_schedule_df = (
+        schedule_df
+        .assign(_date_sort=schedule_df[schedule_columns['date_column']].apply(_safe_parse))
+        .sort_values(by='_date_sort')
+        .drop(columns=['_date_sort'])
+    )
 
     project_root = Path(__file__).resolve().parent.parent
     template_path = os.path.join(project_root, 'template', 'schedule_table_template.html')
 
     schedule_table_template = Template(filename=template_path)
     schedule_table_rendered = schedule_table_template.render(
-        df_schedule=schedule_df,
+        df_schedule=sorted_schedule_df,
         schedule_columns=schedule_columns,
         network_url=yearly['networking_event_url'],
     )

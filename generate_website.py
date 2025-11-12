@@ -46,6 +46,12 @@ def generate_html() -> None:
     df_schedule = parse_csv_to_pandas(paths['input']['schedule']['file_path'],
                                       paths['input']['schedule']['delimiter'])
 
+    title_column = schedule_columns['title_column']
+    if df_schedule is not None and title_column in df_schedule.columns:
+        df_schedule = df_schedule[
+            df_schedule[title_column].fillna("").astype(str).str.strip().ne("Example")
+        ]
+
     # Remove rows with cancelled workshops
     #df_schedule = df_schedule[df_schedule[schedule_columns['status_column']] != 'cancelled']
 
