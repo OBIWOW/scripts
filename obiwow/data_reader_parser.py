@@ -1,9 +1,9 @@
 import json
 import os
 import re
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, time
 from pathlib import Path
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Optional
 from mako.template import Template
 import yaml
 import pandas as pd
@@ -214,6 +214,93 @@ def annotate_networking_event(df: pd.DataFrame, schedule_columns: Dict[str, str]
         return df
 
 
+def _stringify(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.lower() in {"", "nan", "none"}:
+            return ""
+        return stripped
+    try:
+        if pd.isna(value):  # type: ignore[arg-type]
+            return ""
+    except Exception:
+        pass
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value).strip()
+
+
+def parse_schedule_date(date_value: Any) -> Optional[datetime]:
+    normalized = _stringify(date_value)
+    if not normalized:
+        return None
+
+    candidate_values: list[str] = [normalized]
+    for separator in (' to ', ' - ', '-', '–', '—'):
+        if separator in normalized:
+            parts = normalized.split(separator)
+            if len(parts) == 2:
+                candidate = parts[0].strip()
+                if candidate:
+                    candidate_values.append(candidate)
+
+    seen: set[str] = set()
+    date_formats = (
+        '%d.%m.%y',
+        '%d.%m.%Y',
+        '%d/%m/%Y',
+        '%m/%d/%Y',
+        '%Y-%m-%d',
+    )
+
+    for candidate in candidate_values:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+
+        for date_format in date_formats:
+            try:
+                return datetime.strptime(candidate, date_format)
+            except ValueError:
+                continue
+
+        try:
+            parsed = pd.to_datetime(candidate, dayfirst=True, errors='raise')
+            return parsed.to_pydatetime()
+        except Exception:
+            continue
+
+    print(f"WARNING: Unable to parse schedule date '{date_value}'.")
+    return None
+
+
+def parse_schedule_time(time_value: Any) -> Optional[time]:
+    normalized = _stringify(time_value)
+    if not normalized:
+        return None
+
+    candidates = []
+    if '-' in normalized:
+        candidates.append(normalized.split('-', 1)[0].strip())
+    candidates.append(normalized)
+
+    for candidate in candidates:
+        if not candidate:
+            continue
+        if re.match(r'^\d:\d{2}$', candidate):
+            candidate = f"0{candidate}"
+        for time_format in ('%H:%M', '%H.%M'):
+            try:
+                return datetime.strptime(candidate, time_format).time()
+            except ValueError:
+                continue
+
+    print(f"WARNING: Unable to parse schedule time '{time_value}'.")
+    return None
+
+
 def generate_ical_content(row: pd.Series, schedule_columns: Dict[str, str], rooms: Dict[str, Dict[str, str]],
                           yearly: Dict[str, str]) -> str:
     """
@@ -229,17 +316,25 @@ def generate_ical_content(row: pd.Series, schedule_columns: Dict[str, str], room
         str: The iCalendar content.
     """
     try:
-        datetime_start = datetime.strptime(
-            row[schedule_columns['date_column']] + '-' + row[schedule_columns['start_time_column']], '%d.%m.%y-%H:%M')
-        datetime_end = datetime.strptime(
-            row[schedule_columns['date_column']] + '-' + row[schedule_columns['end_time_column']], '%d.%m.%y-%H:%M')
+        parsed_date = parse_schedule_date(row.get(schedule_columns['date_column']))
+        if not parsed_date:
+            raise ValueError(f"Unable to parse date '{row.get(schedule_columns['date_column'])}'")
+        start_time_value = parse_schedule_time(row.get(schedule_columns['start_time_column']))
+        end_time_value = parse_schedule_time(row.get(schedule_columns['end_time_column']))
+        if not start_time_value or not end_time_value:
+            raise ValueError("Missing start or end time")
 
-        ical_start = datetime_start.strftime("%Y%m%d") + "T" + datetime_start.strftime("%H%M%S")
-        ical_end = datetime_start.strftime("%Y%m%d") + "T" + datetime_end.strftime("%H%M%S")
-        workshop_title = row[schedule_columns['title_column']]
-        room_name = row[schedule_columns['room_column']]
-        room_url = rooms[room_name]['url'] if room_name in rooms else None
-        event_name = yearly['event_name']
+        datetime_start = datetime.combine(parsed_date.date(), start_time_value)
+        datetime_end = datetime.combine(parsed_date.date(), end_time_value)
+        if datetime_end <= datetime_start:
+            datetime_end = datetime_start + timedelta(hours=1)
+
+        ical_start = datetime_start.strftime("%Y%m%dT%H%M%S")
+        ical_end = datetime_end.strftime("%Y%m%dT%H%M%S")
+        workshop_title = _stringify(row.get(schedule_columns['title_column']))
+        room_name = _stringify(row.get(schedule_columns['room_column']))
+        room_url = rooms.get(room_name, {}).get('url') if room_name else None
+        event_name = yearly.get('event_name', '')
 
         project_root = Path(__file__).resolve().parent.parent
         template_path = os.path.join(project_root, 'template', 'invite.ics')
@@ -298,14 +393,40 @@ def write_schedule_json(schedule_df: pd.DataFrame, schedule_columns: dict, outpu
 
         for _, row in schedule_df.iterrows():
             workshop_id = row[schedule_columns['id_column']]
+            parsed_date = parse_schedule_date(row.get(schedule_columns['date_column']))
+            formatted_date = parsed_date.strftime('%d.%m.%y') if parsed_date else _stringify(
+                row.get(schedule_columns['date_column'])
+            )
+
+            room_name = _stringify(row.get(schedule_columns['room_column']))
+            main_instructor = _stringify(row.get(schedule_columns['main_instructor_column']))
+            helper_instructor = _stringify(row.get(schedule_columns['helper_instructor_column']))
+            title = _stringify(row.get(schedule_columns['title_column']))
+
+            max_attendance_raw = row.get(schedule_columns['max_attendance'])
+            if max_attendance_raw is None or (isinstance(max_attendance_raw, float) and pd.isna(max_attendance_raw)):
+                max_attendance_value = None
+            else:
+                try:
+                    max_attendance_value = int(max_attendance_raw)
+                except (TypeError, ValueError):
+                    max_attendance_value = _stringify(max_attendance_raw)
+
+            start_time_value = _stringify(row.get(schedule_columns['start_time_column']))
+            end_time_value = _stringify(row.get(schedule_columns['end_time_column']))
+            if start_time_value and end_time_value:
+                timeslot = f"{start_time_value}-{end_time_value}"
+            else:
+                timeslot = start_time_value or end_time_value or ""
+
             schedule_dict[workshop_id] = {
-                "date": row[schedule_columns['date_column']].strftime('%d.%m.%y'),
-                "room": row[schedule_columns['room_column']],
-                "main_instructor": row[schedule_columns['main_instructor_column']],
-                "helper": row[schedule_columns['helper_instructor_column']],
-                "title": row[schedule_columns['title_column']],
-                "max_attendance": row[schedule_columns['max_attendance']],
-                "timeslot": row[schedule_columns['start_time_column']] + '-' + row[schedule_columns['end_time_column']]
+                "date": formatted_date,
+                "room": room_name,
+                "main_instructor": main_instructor,
+                "helper": helper_instructor,
+                "title": title,
+                "max_attendance": max_attendance_value,
+                "timeslot": timeslot
             }
 
         with open(output_file, 'w') as json_file:
