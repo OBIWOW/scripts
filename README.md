@@ -26,7 +26,7 @@ For the `rooms.yaml` file, you can add or remove rooms, but the structure must b
 Input:
 * `submission.csv` --> Exported files of the nettskjema with the proposals 
 * `schedule.csv` --> Export values of the schedule Google Sheet
-* `footer.html` --> Footer display at the bottom of the schedule table
+* `footer.html` --> Footer display at the bottom of the schedule table, based on `template/footer_template.html`
 
 Output:
 * `workshop_content.html` --> HTML file for adding to the website

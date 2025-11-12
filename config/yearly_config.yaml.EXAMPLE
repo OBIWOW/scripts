@@ -2,6 +2,6 @@ event_name: "Oslo Bioinformatics Workshop Week <YEAR>"
 registration_open: false
 pre_register_link: "https://nettskjema.no/a/<SOMETHING>="
 post_register_link: "&LCKworkshop=true"
-ics_folder: "https://www.mn.uio.no/<PATH_TO_ONLINE_ICS_FILE>/"
+ics_folder: "https://www.mn.uio.no/bils/english/events/oslo-bioinfomatics-week/<PATH_TO_THIS_YEAR>/ics_files/"
 networking_event_url: "https://www.mn.uio.no/<URL_TO_NETWORKING_EVENT>""
 
