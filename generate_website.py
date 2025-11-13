@@ -102,5 +102,9 @@ def generate_html() -> None:
         f"Copy '*.ics' files in the '{paths['output']['ics']['dir_path']}' folder so that they are in {paths['output']['ics']['dir_path']}.")
 
 
+import subprocess
+
 if __name__ == "__main__":
     generate_html()
+    # Generate the markdown room schedule as the final step
+    subprocess.run(["python3", "generate_room_schedule.py"], check=True)
