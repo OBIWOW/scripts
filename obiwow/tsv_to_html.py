@@ -235,18 +235,23 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
 def generate_schedule_table(schedule_df: pd.DataFrame, schedule_columns: dict, yearly: dict) -> str:
     schedule_df = schedule_df.copy()
 
-    def _safe_parse(value) -> datetime:
-        if pd.isna(value) or value is None:
-            return datetime.max
-        parsed = parse_workshop_date(str(value))
-        return parsed if parsed else datetime.max
+    parsed_dates = schedule_df[schedule_columns['date_column']].apply(parse_workshop_date)
+    sort_dates = [
+        value if isinstance(value, datetime) else datetime.max
+        for value in parsed_dates
+    ]
 
     sorted_schedule_df = (
         schedule_df
-        .assign(_date_sort=schedule_df[schedule_columns['date_column']].apply(_safe_parse))
-        .sort_values(by='_date_sort')
-        .drop(columns=['_date_sort'])
+        .assign(_parsed_date=parsed_dates, _sort_date=sort_dates)
+        .sort_values(by='_sort_date')
+        .drop(columns=['_sort_date'])
     )
+    parsed_mask = sorted_schedule_df['_parsed_date'].notna()
+    sorted_schedule_df.loc[parsed_mask, schedule_columns['date_column']] = sorted_schedule_df.loc[
+        parsed_mask, '_parsed_date'
+    ]
+    sorted_schedule_df = sorted_schedule_df.drop(columns=['_parsed_date'])
 
     project_root = Path(__file__).resolve().parent.parent
     template_path = os.path.join(project_root, 'template', 'schedule_table_template.html')
