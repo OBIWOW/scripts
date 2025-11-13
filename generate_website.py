@@ -1,7 +1,8 @@
 from obiwow.data_reader_parser import standardise_time_of_day_column, write_html_page
 from obiwow.data_reader_parser import (
     parse_yaml, parse_csv_to_pandas, merge_submission_schedule,
-    add_start_end_time_to_schedule, annotate_networking_event, write_ical_files, write_schedule_json
+    add_start_end_time_to_schedule, annotate_networking_event, write_ical_files, write_schedule_json,
+    expand_multiday_workshops
 )
 from obiwow.tsv_to_html import generate_workshop_body, generate_schedule_table, generate_full_html_page
 
@@ -52,9 +53,28 @@ def generate_html() -> None:
             df_schedule[title_column].fillna("").astype(str).str.strip().ne("Example")
         ]
 
+        # Expand multi-day workshops to per-day entries (with titled suffixes, per requirements)
+        df_schedule = expand_multiday_workshops(df_schedule, schedule_columns)
     # Remove rows with cancelled workshops
     #df_schedule = df_schedule[df_schedule[schedule_columns['status_column']] != 'cancelled']
 
+    # Assign start/end time columns to the schedule DataFrame
+    df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)
+    # DEBUG: print the DataFrame columns and first rows to verify time columns
+    print("Schedule DataFrame columns after time assignment:", df_schedule.columns.tolist())
+    print(df_schedule[[schedule_columns['title_column'],
+                       schedule_columns['date_column'],
+                       schedule_columns.get('time_column', 'Time'),
+                       schedule_columns.get('duration_column', 'Length'),
+                       schedule_columns.get('start_time_column', 'Start time'),
+                       schedule_columns.get('end_time_column', 'End time')]].head(10))
+    # DEBUG: print first few expanded schedule entries and their computed times
+    print(df_schedule[[schedule_columns['title_column'],
+                       schedule_columns['date_column'],
+                       schedule_columns.get('time_column', 'Time'),
+                       schedule_columns.get('duration_column', 'Length'),
+                       schedule_columns.get('start_time_column', 'start_time'),
+                       schedule_columns.get('end_time_column', 'end_time')]].head(10))
     standardise_time_of_day_column(df_schedule, schedule_columns)
     df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)
     df_schedule = annotate_networking_event(df_schedule, schedule_columns)

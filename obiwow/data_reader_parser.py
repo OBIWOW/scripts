@@ -47,6 +47,51 @@ def add_duration_to_time(start_time_str: str, duration_str: str, workshop_title:
         elif start_time_str == '13:00':
             return '16:00'
         return start_time_str
+def expand_multiday_workshops(schedule_df: pd.DataFrame, schedule_columns: Dict[str, str]) -> pd.DataFrame:
+    """
+    Expand workshops with 'Length' in ['2 days', '3 days', '4 days', '5 days'] so each day becomes a separate entry.
+
+    Each entry:
+    - Has 'Workshop name' as 'Workshop name - Day N'
+    - Uses the original Date as start, increments by 1 day per entry
+    - Carries over relevant columns
+    - Ensures valid 'Time' (full day) for each per-day entry if ambiguous
+    - Final day's 'end_time' is 16:00 (used for ical)
+    """
+    multi_day_lengths = ['2 days', '3 days', '4 days', '5 days']
+    expanded_rows = []
+    for idx, row in schedule_df.iterrows():
+        length = str(row[schedule_columns['duration_column']]).strip()
+        if length in multi_day_lengths:
+            num_days = int(length[0])  # parses '2' from '2 days' etc.
+            start_date = row[schedule_columns['date_column']]
+            try:
+                start_dt = datetime.strptime(str(start_date), '%d.%m.%Y')
+            except Exception:
+                start_dt = pd.to_datetime(start_date, errors='coerce')
+            for day in range(num_days):
+                new_row = row.copy()
+                day_dt = start_dt + timedelta(days=day)
+                new_row[schedule_columns['date_column']] = day_dt.strftime('%d.%m.%Y')
+                new_row[schedule_columns['title_column']] = (
+                    f"{row[schedule_columns['title_column']]} - Day {day+1}"
+                )
+                # Default ambiguous time/duration to "full day" for expansion
+                time_col = schedule_columns.get('time_column', 'Time')
+                dur_col = schedule_columns.get('duration_column', 'Length')
+                if not str(new_row.get(time_col, "")).strip() or str(new_row[time_col]).lower() in ['nan', '', 'none']:
+                    new_row[time_col] = "full day"
+                if not str(new_row.get(dur_col, "")).strip() or str(new_row[dur_col]).lower() in ['nan', '', 'none', length]:
+                    new_row[dur_col] = "full day"
+                # Add marker so .ics logic can find last day easily
+                new_row['multi_day_final'] = ((day+1) == num_days)
+                expanded_rows.append(new_row)
+        else:
+            # Non-multi-day workshops as-is
+            row['multi_day_final'] = True
+            expanded_rows.append(row)
+    expanded_df = pd.DataFrame(expanded_rows)
+    return expanded_df
 
 
 def get_start_end_time(data: pd.Series, schedule_columns: Dict[str, str]) -> Tuple[str, str]:
@@ -316,22 +361,35 @@ def generate_ical_content(row: pd.Series, schedule_columns: Dict[str, str], room
         str: The iCalendar content.
     """
     try:
-        parsed_date = parse_schedule_date(row.get(schedule_columns['date_column']))
-        if not parsed_date:
-            raise ValueError(f"Unable to parse date '{row.get(schedule_columns['date_column'])}'")
-        start_time_value = parse_schedule_time(row.get(schedule_columns['start_time_column']))
-        end_time_value = parse_schedule_time(row.get(schedule_columns['end_time_column']))
-        if not start_time_value or not end_time_value:
-            raise ValueError("Missing start or end time")
+        # Use multi-day start/end if provided
+        if (
+            row.get('multi_day_start') is not None and
+            row.get('multi_day_end') is not None
+        ):
+            (min_date, min_start) = row.get('multi_day_start')
+            (max_date, max_end) = row.get('multi_day_end')
+            datetime_start = datetime.combine(min_date.date(), min_start)
+            datetime_end = datetime.combine(max_date.date(), max_end)
+        else:
+            parsed_date = parse_schedule_date(row.get(schedule_columns['date_column']))
+            if not parsed_date:
+                raise ValueError(f"Unable to parse date '{row.get(schedule_columns['date_column'])}'")
+            start_time_value = parse_schedule_time(row.get(schedule_columns['start_time_column']))
+            end_time_value = parse_schedule_time(row.get(schedule_columns['end_time_column']))
+            if not start_time_value or not end_time_value:
+                raise ValueError("Missing start or end time")
 
-        datetime_start = datetime.combine(parsed_date.date(), start_time_value)
-        datetime_end = datetime.combine(parsed_date.date(), end_time_value)
+            datetime_start = datetime.combine(parsed_date.date(), start_time_value)
+            datetime_end = datetime.combine(parsed_date.date(), end_time_value)
         if datetime_end <= datetime_start:
             datetime_end = datetime_start + timedelta(hours=1)
 
         ical_start = datetime_start.strftime("%Y%m%dT%H%M%S")
         ical_end = datetime_end.strftime("%Y%m%dT%H%M%S")
         workshop_title = _stringify(row.get(schedule_columns['title_column']))
+        # Remove ' - Day N', ' — Day N', etc from workshop title
+        import re
+        workshop_title = re.sub(r"\s*[-—]\s*Day\s*\d+", "", workshop_title)
         room_name = _stringify(row.get(schedule_columns['room_column']))
         room_url = rooms.get(room_name, {}).get('url') if room_name else None
         event_name = yearly.get('event_name', '')
@@ -369,6 +427,36 @@ def write_ical_files(df: pd.DataFrame, outdir_ics: str, schedule_columns: Dict[s
         for ics_file in Path(outdir_ics).glob('*.ics'):
             if ics_file.is_file():
                 ics_file.unlink()
+
+        # Preprocess multi-day workshops to set start/end times
+        df = df.copy()
+        title_col = schedule_columns['title_column']
+        date_col = schedule_columns['date_column']
+        start_col = schedule_columns['start_time_column']
+        end_col = schedule_columns['end_time_column']
+        df['multi_day_start'] = None
+        df['multi_day_end'] = None
+
+        grouped = df.groupby(df[title_col].astype(str).str.split(' - Day').str[0].str.strip())
+        for base_title, group in grouped:
+            # Only if multiple days
+            if len(group) > 1:
+                dates = group[date_col].apply(parse_schedule_date)
+                starts = group[start_col].apply(parse_schedule_time)
+                ends = group[end_col].apply(parse_schedule_time)
+
+                # Find earliest start and latest end
+                sorted_group = group.assign(date=dates)
+                min_idx = dates.idxmin()
+                max_idx = dates.idxmax()
+                min_date = dates[min_idx]
+                min_start = starts[min_idx]
+                max_date = dates[max_idx]
+                max_end = ends[max_idx]
+
+                for idx in group.index:
+                    df.at[idx, 'multi_day_start'] = (min_date, min_start)
+                    df.at[idx, 'multi_day_end'] = (max_date, max_end)
 
         for _, row in df.iterrows():
             ics_content = generate_ical_content(row, schedule_columns, rooms, yearly)

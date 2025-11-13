@@ -1,7 +1,7 @@
 import csv
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -158,6 +158,8 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
     template_path = os.path.join(project_root, 'template', 'workshop_body_template.html')
     workshop_body_template = Template(filename=template_path)
 
+    seen_workshops = set()
+
     for index, row in submission_schedule_df.iterrows():
 
         networking_event = row[schedule_columns['networking_event_column']]
@@ -165,7 +167,16 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
         if networking_event:
             continue
 
+        # Check for duplicate workshop (by title + description)
+        this_title = get_clean_value(row, nettskjema_columns['title_column'], default="")
+        this_desc = get_clean_value(row, nettskjema_columns['description_column'], default="")
+        key = (this_title.strip().lower(), this_desc.strip().lower())
+        if key in seen_workshops:
+            continue
+        seen_workshops.add(key)
+
         # Preparing data for workshop body
+        is_multiday = False  # Initialize flag for every row
         workshop_number = get_clean_value(row, schedule_columns['id_column'], default=str(index + 1))
         schedule_title = get_clean_value(row, schedule_columns['title_column'],
                                          default=f"Workshop {workshop_number}")
@@ -183,11 +194,44 @@ def generate_workshop_body(submission_schedule_df: pd.DataFrame, nettskjema_colu
             workshop_time = f"{start_time}-{end_time}"
         else:
             workshop_time = start_time or end_time or ""
-        if workshop_time == '9:00-16:00':
+        # For multi-day range, do NOT add block times to the date string
+        if is_multiday:
+            workshop_time = ""  # do not append any block time
+        elif workshop_time == '9:00-16:00':
             workshop_time = '9:00-12:00 13:00-16:00'
         workshop_ics_path = yearly['ics_folder'] + str(workshop_number) + '.ics'
         room_name, room_url = room_info(row, rooms, schedule_columns)
         workshop_description = get_clean_value(row, nettskjema_columns['description_column'])
+
+        # --- Multi-day workshop date span fix ---
+        is_multiday = (
+            " - Day 1" in schedule_title and not row.get('multi_day_final', True)
+        )
+        if is_multiday:
+            # Grab the base title
+            base_title = schedule_title.rsplit(" - Day", 1)[0].strip()
+            # Filter all rows in submission_schedule_df for matching base title
+            candidates = submission_schedule_df[
+                submission_schedule_df[schedule_columns['title_column']].str.startswith(base_title)
+            ]
+            # Find the last day (multi_day_final True)
+            last_day_row = candidates[candidates['multi_day_final'] == True]
+            if not last_day_row.empty:
+                # Use the first day info from current row
+                first_date = parsed_date.strftime("%A %d %B %Y") if parsed_date else workshop_date_str
+                first_time = start_time
+                # Use the last day info
+                last_row = last_day_row.iloc[0]
+                last_date_raw = get_clean_value(last_row, schedule_columns['date_column'])
+                last_date_obj = parse_workshop_date(last_date_raw)
+                last_date = last_date_obj.strftime("%A %d %B %Y") if last_date_obj else last_date_raw
+                last_end_time = get_clean_value(last_row, schedule_columns['end_time_column'])
+                workshop_date = f"{first_date} {first_time} - {last_date} {last_end_time}"
+            else:
+                # Fallback to single-day logic
+                workshop_date = workshop_date if workshop_date else workshop_date_str
+        # --- End multi-day fix ---
+
         outcome_value = get_clean_value(row, nettskjema_columns['outcome_column'])
         if outcome_value:
             list_learning_outcome, bool_header_outcome = make_list(outcome_value)
