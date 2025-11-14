@@ -476,53 +476,107 @@ def write_ical_files(df: pd.DataFrame, outdir_ics: str, schedule_columns: Dict[s
 
 def write_schedule_json(schedule_df: pd.DataFrame, schedule_columns: dict, output_file: str) -> None:
     """
-    Create a JSON file from the schedule DataFrame.
-
-    Args:
-        schedule_df (pd.DataFrame): The schedule DataFrame.
-        schedule_columns (dict): Dictionary mapping column names for the schedule data.
-        output_file (str): The path to the output JSON file.
+    Create a JSON file from the schedule DataFrame, correctly handling multi-day workshops.
+    Multi-day workshops are grouped by ID, and their per-day data is aggregated into lists.
+    Also prints a warning if a room has more than one workshop booked at the same timeslot (for any timeslot).
     """
     try:
+        from collections import defaultdict
+        import re
+        import sys
+
         schedule_dict = {}
 
+        grouped = defaultdict(list)
         for _, row in schedule_df.iterrows():
-            workshop_id = row[schedule_columns['id_column']]
-            parsed_date = parse_schedule_date(row.get(schedule_columns['date_column']))
-            formatted_date = parsed_date.strftime('%d.%m.%y') if parsed_date else _stringify(
-                row.get(schedule_columns['date_column'])
-            )
+            grouped[row[schedule_columns['id_column']]].append(row)
 
-            room_name = _stringify(row.get(schedule_columns['room_column']))
-            main_instructor = _stringify(row.get(schedule_columns['main_instructor_column']))
-            helper_instructor = _stringify(row.get(schedule_columns['helper_instructor_column']))
-            title = _stringify(row.get(schedule_columns['title_column']))
+        for workshop_id, rows in grouped.items():
+            # Collect all per-day data
+            dates = []
+            rooms = []
+            timeslots = []
+            main_instructor = None
+            helper_instructor = None
+            max_attendance_value = None
+            
+            # Use the base title (strip trailing ' - Day N' if necessary)
+            def base_title(raw_title):
+                return re.sub(r'\s*-\s*Day [0-9]+$', '', str(raw_title)).strip()
+            title = base_title(rows[0][schedule_columns['title_column']])
 
-            max_attendance_raw = row.get(schedule_columns['max_attendance'])
-            if max_attendance_raw is None or (isinstance(max_attendance_raw, float) and pd.isna(max_attendance_raw)):
-                max_attendance_value = None
-            else:
-                try:
-                    max_attendance_value = int(max_attendance_raw)
-                except (TypeError, ValueError):
-                    max_attendance_value = _stringify(max_attendance_raw)
+            for row in rows:
+                # Dates
+                parsed_date = parse_schedule_date(row.get(schedule_columns['date_column']))
+                formatted_date = parsed_date.strftime('%d.%m.%y') if parsed_date else _stringify(
+                    row.get(schedule_columns['date_column'])
+                )
+                dates.append(formatted_date)
 
-            start_time_value = _stringify(row.get(schedule_columns['start_time_column']))
-            end_time_value = _stringify(row.get(schedule_columns['end_time_column']))
-            if start_time_value and end_time_value:
-                timeslot = f"{start_time_value}-{end_time_value}"
-            else:
-                timeslot = start_time_value or end_time_value or ""
+                # Rooms
+                room_name = _stringify(row.get(schedule_columns['room_column']))
+                rooms.append(room_name)
+
+                # Timeslot
+                start_time_value = _stringify(row.get(schedule_columns['start_time_column']))
+                end_time_value = _stringify(row.get(schedule_columns['end_time_column']))
+                if start_time_value and end_time_value:
+                    timeslot = f"{start_time_value}-{end_time_value}"
+                else:
+                    timeslot = start_time_value or end_time_value or ""
+                timeslots.append(timeslot)
+
+                # Instructors and attendance: just use first non-null value
+                if not main_instructor:
+                    main_instructor = _stringify(row.get(schedule_columns['main_instructor_column']))
+                if not helper_instructor:
+                    helper_instructor = _stringify(row.get(schedule_columns['helper_instructor_column']))
+                if max_attendance_value is None:
+                    raw_val = row.get(schedule_columns['max_attendance'])
+                    if raw_val is None or (isinstance(raw_val, float) and pd.isna(raw_val)):
+                        max_attendance_value = None
+                    else:
+                        try:
+                            max_attendance_value = int(raw_val)
+                        except (TypeError, ValueError):
+                            max_attendance_value = _stringify(raw_val)
+
+            # Remove duplicates but preserve order
+            def dedup(l):
+                seen = set()
+                res = []
+                for x in l:
+                    if x not in seen:
+                        seen.add(x)
+                        res.append(x)
+                return res
 
             schedule_dict[workshop_id] = {
-                "date": formatted_date,
-                "room": room_name,
+                "dates": dedup(dates),
+                "rooms": dedup(rooms),
                 "main_instructor": main_instructor,
                 "helper": helper_instructor,
                 "title": title,
                 "max_attendance": max_attendance_value,
-                "timeslot": timeslot
+                "timeslots": dedup(timeslots)
             }
+
+        # --- Begin Overlap Detection ---
+        slot_to_workshops = defaultdict(list)
+        for workshop_id, ws in schedule_dict.items():
+            for date, room, timeslot in zip(ws.get('dates', []), ws.get('rooms', []), ws.get('timeslots', [])):
+                slot_label = timeslot.strip()
+                slot_to_workshops[(date, room, slot_label)].append((workshop_id, ws["title"]))
+
+        for key, conflicts in slot_to_workshops.items():
+            if len(conflicts) > 1:
+                date, room, slot = key
+                conflict_str = "; ".join([f"{wid}: {title}" for wid, title in conflicts])
+                print(
+                    f"WARNING: Room scheduling conflict on {date}, room='{room}', timeslot='{slot}'. Conflicting workshops: {conflict_str}",
+                    file=sys.stderr
+                )
+        # --- End Overlap Detection ---
 
         with open(output_file, 'w') as json_file:
             json.dump(schedule_dict, json_file, indent=4)

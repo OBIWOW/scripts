@@ -9,8 +9,38 @@ with open("config/rooms.yaml", "r") as f:
 
 used_rooms = set()
 
-# Read schedule CSV
-schedule = pd.read_csv("inputs/schedule.csv")
+# Read schedule from outputs/schedule.json instead of inputs/schedule.csv
+import json
+
+with open("outputs/schedule.json", "r") as f:
+    schedule_data = json.load(f)
+
+# Expand JSON to per-day per-room rows similar to the original CSV approach
+rows = []
+for workshop_id, w in schedule_data.items():
+    # Unpack arrays
+    dates = w.get("dates", [])
+    timeslots = w.get("timeslots", [])
+    rooms = w.get("rooms", [])
+    n = max(len(dates), len(timeslots), len(rooms))
+    # Pad arrays if necessary
+    if not timeslots:
+        timeslots = ["" for _ in range(len(dates))]
+    if not rooms:
+        rooms = ["" for _ in range(len(dates))]
+    for i in range(n):
+        rows.append({
+            "Date": dates[i] if i < len(dates) else dates[0] if dates else "",
+            "Time": timeslots[i] if i < len(timeslots) else timeslots[0] if timeslots else "",
+            "Room in Ole Johan Dalshus": rooms[i] if i < len(rooms) else rooms[0] if rooms else "",
+            "Workshop name": w.get("title", ""),
+            "Main instructor": w.get("main_instructor", ""),
+            "Helper": w.get("helper", ""),
+            "Max attendance": w.get("max_attendance", ""),
+            "ID": workshop_id
+        })
+
+schedule = pd.DataFrame(rows)
 
 # Only keep rows with workshop names
 workshop_rows = schedule[
