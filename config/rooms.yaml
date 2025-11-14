@@ -19,6 +19,9 @@ Postscript (room 2458):
 Java (room 2423):
   name: "Java (room 2423) in Ole-Johan Dahls hus (OJD)"
   url: "https://use.mazemap.com/#v=1&config=uio&campusid=799&zlevel=2&center=10.718043,59.943400&zoom=18&sharepoitype=poi&sharepoi=1000987633"
+Caml (room 3438):
+  name: "Caml (room 3438) in Ole-Johan Dahls hus (OJD)"
+  url: "https://use.mazemap.com/#v=1&config=uio&campusid=799&zlevel=3&center=10.718478,59.943660&zoom=18&sharepoitype=poi&sharepoi=1000987677"
 Auditorium Smalltalk (room 1416):
   name: "Auditorium Smalltalk, Ole Johan Dalshus (OJD)"
   url: "https://use.mazemap.com/?campusid=799&sharepoitype=identifier&sharepoi=GA06-1416&config=uio"
