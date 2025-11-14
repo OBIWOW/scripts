@@ -33,6 +33,7 @@ def generate_html() -> None:
     """
     Generate the HTML and iCalendar files for the workshop website.
     """
+    DEBUG = False # for printing out debugging info
     config = import_all_config()
 
     # registration_open = config['yearly'].get('registration_open', False)
@@ -60,21 +61,22 @@ def generate_html() -> None:
 
     # Assign start/end time columns to the schedule DataFrame
     df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)
-    # DEBUG: print the DataFrame columns and first rows to verify time columns
-    print("Schedule DataFrame columns after time assignment:", df_schedule.columns.tolist())
-    print(df_schedule[[schedule_columns['title_column'],
-                       schedule_columns['date_column'],
-                       schedule_columns.get('time_column', 'Time'),
-                       schedule_columns.get('duration_column', 'Length'),
-                       schedule_columns.get('start_time_column', 'Start time'),
-                       schedule_columns.get('end_time_column', 'End time')]].head(10))
-    # DEBUG: print first few expanded schedule entries and their computed times
-    print(df_schedule[[schedule_columns['title_column'],
-                       schedule_columns['date_column'],
-                       schedule_columns.get('time_column', 'Time'),
-                       schedule_columns.get('duration_column', 'Length'),
-                       schedule_columns.get('start_time_column', 'start_time'),
-                       schedule_columns.get('end_time_column', 'end_time')]].head(10))
+    if DEBUG:
+        # DEBUG: print the DataFrame columns and first rows to verify time columns
+        print("Schedule DataFrame columns after time assignment:", df_schedule.columns.tolist())
+        print(df_schedule[[schedule_columns['title_column'],
+                        schedule_columns['date_column'],
+                        schedule_columns.get('time_column', 'Time'),
+                        schedule_columns.get('duration_column', 'Length'),
+                        schedule_columns.get('start_time_column', 'Start time'),
+                        schedule_columns.get('end_time_column', 'End time')]].head(10))
+        # DEBUG: print first few expanded schedule entries and their computed times
+        print(df_schedule[[schedule_columns['title_column'],
+                        schedule_columns['date_column'],
+                        schedule_columns.get('time_column', 'Time'),
+                        schedule_columns.get('duration_column', 'Length'),
+                        schedule_columns.get('start_time_column', 'start_time'),
+                        schedule_columns.get('end_time_column', 'end_time')]].head(10))
     standardise_time_of_day_column(df_schedule, schedule_columns)
     df_schedule = add_start_end_time_to_schedule(df_schedule, schedule_columns)
     df_schedule = annotate_networking_event(df_schedule, schedule_columns)
