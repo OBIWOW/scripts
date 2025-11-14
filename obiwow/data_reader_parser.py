@@ -394,6 +394,12 @@ def generate_ical_content(row: pd.Series, schedule_columns: Dict[str, str], room
         room_url = rooms.get(room_name, {}).get('url') if room_name else None
         event_name = yearly.get('event_name', '')
 
+        # Construct workshop_id and workshop_url for HTML destination/page
+        workshop_id = str(row.get(schedule_columns['id_column']))
+        # Base URL - keep user-provided if it changes year-to-year!
+        workshop_url_base = "https://www.mn.uio.no/bils/english/events/oslo-bioinfomatics-week/oslo-bioinformatics-workshop-week-2025/index.html"
+        workshop_url = f"{workshop_url_base}#{workshop_id}"
+
         project_root = Path(__file__).resolve().parent.parent
         template_path = os.path.join(project_root, 'template', 'invite.ics')
 
@@ -403,7 +409,8 @@ def generate_ical_content(row: pd.Series, schedule_columns: Dict[str, str], room
                                           workshop_title=workshop_title,
                                           room_name=room_name,
                                           room_url=room_url,
-                                          event_name=event_name)
+                                          event_name=event_name,
+                                          workshop_url=workshop_url)
         return ics_content
     except Exception as e:
         print(f"Error in generate_ical_content: {e} in '{row[schedule_columns['title_column']]}'")
