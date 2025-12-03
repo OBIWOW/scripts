@@ -10,11 +10,20 @@ Create email drafts for OBiWoW participants (Apple mail app), send as bcc
 
 import pandas as pd
 import subprocess as sp
+import argparse
+
+parser = argparse.ArgumentParser(description='Create Apple Mail drafts for workshops from a registration table')
+
+parser.add_argument('-i','--input',required=True, help='Path to CSV file with registrations (one row per participant)')
+
+args=parser.parse_args()
 
 #Input registration file
-data=pd.read_csv('inputs/data-567621-2025-12-02-1308.txt', sep=';')
+file=args.input
+data=pd.read_csv(file, sep=';')
 
 link='https://www.mn.uio.no/bils/english/events/oslo-bioinfomatics-week/oslo-bioinformatics-workshop-week-2025/'
+sender='oslo-bioinfo-workshops@ifi.uio.no'
 
 
 def applescript_escape(s: str) -> str:
@@ -24,10 +33,11 @@ def applescript_escape(s: str) -> str:
     return s
 
 
-def create_mail_draft(subject, body, bcc_list):
+def create_mail_draft(subject, sender, body, bcc_list):
     
     subject_esc = applescript_escape(subject)
     body_esc = applescript_escape(body)
+    sender_esc=applescript_escape(sender)
 
     # AppleScript-linjer for å legge inn BCC-mottakere
     bcc_lines = []
@@ -42,6 +52,7 @@ def create_mail_draft(subject, body, bcc_list):
     applescript = f'''
 set subjectText to "{subject_esc}"
 set bodyText to "{body_esc}"
+set senderAddress to "{sender_esc}"
 
 tell application "Mail"
     set newMessage to make new outgoing message with properties {{subject:subjectText, content:bodyText}}
@@ -78,7 +89,7 @@ Trainee Committee of BiLS (Bioinformatics in Life Science) at University of Oslo
 """
 
     print(f"Making draft for {title}: ({len(bcc_emails)} participants)")
-    create_mail_draft(subject=subject, body=body, bcc_list=bcc_emails)
+    create_mail_draft(subject=subject, sender=sender, body=body, bcc_list=bcc_emails)
 
 print("Done")
 
