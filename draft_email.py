@@ -55,7 +55,7 @@ set bodyText to "{body_esc}"
 set senderAddress to "{sender_esc}"
 
 tell application "Mail"
-    set newMessage to make new outgoing message with properties {{subject:subjectText, content:bodyText}}
+    set newMessage to make new outgoing message with properties {{subject:subjectText, content:bodyText, sender:senderAddress}}
     tell newMessage
 {bcc_block}
         set visible to true
