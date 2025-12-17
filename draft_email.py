@@ -69,7 +69,7 @@ end tell
 for title, group in data.groupby("workshop", dropna=False):
 
     title = title.replace('_',' ')
-    subject=f"OBiWoW2025: {title}"
+    subject=f"Your registration to the OBiWoW2025 workshop '{title}'"
 
     bcc_emails = group['var3'].unique().tolist()
 
